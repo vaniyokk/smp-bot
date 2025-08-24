@@ -18,7 +18,7 @@ export interface AIGeneratedContent {
   description: string;
   genre: string;
   tags: string[];
-  seoTitle?: string;
+  seoTitle?: string | undefined;
 }
 
 export interface WebsitePublishResult {
@@ -39,12 +39,12 @@ export interface ProcessingResult {
   success: boolean;
   notionId: string;
   title: string;
-  aiContent?: AIGeneratedContent;
-  websiteResult?: WebsitePublishResult;
-  youtubeResult?: YouTubeUpdateResult;
-  error?: string;
+  aiContent?: AIGeneratedContent | undefined;
+  websiteResult?: WebsitePublishResult | undefined;
+  youtubeResult?: YouTubeUpdateResult | undefined;
+  error?: string | undefined;
   startTime: Date;
-  endTime?: Date;
+  endTime?: Date | undefined;
 }
 
 export interface Config {

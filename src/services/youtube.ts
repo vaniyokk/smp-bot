@@ -125,7 +125,7 @@ Download the sheet music: ${sheetMusicUrl}
     }
 
     // Check if there's already a sheet music section we should replace
-    const existingSheetMusicMatch = currentDescription.match(/🎼.*?---/s);
+    const existingSheetMusicMatch = currentDescription.match(/🎼[\s\S]*?---/);
     if (existingSheetMusicMatch) {
       return currentDescription.replace(existingSheetMusicMatch[0], sheetMusicSection.trim());
     }
@@ -154,7 +154,7 @@ Download the sheet music: ${sheetMusicUrl}
     }
   }
 
-  async getVideoInfo(videoId: string): Promise<{ title?: string; description?: string } | null> {
+  async getVideoInfo(videoId: string): Promise<{ title?: string | undefined; description?: string | undefined } | null> {
     try {
       const response = await this.youtube.videos.list({
         auth: this.auth,
@@ -168,8 +168,8 @@ Download the sheet music: ${sheetMusicUrl}
       }
 
       return {
-        title: video.snippet.title || undefined,
-        description: video.snippet.description || undefined,
+        title: video.snippet.title ?? undefined,
+        description: video.snippet.description ?? undefined,
       };
       
     } catch (error) {

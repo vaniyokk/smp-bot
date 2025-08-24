@@ -73,7 +73,8 @@ export class NotionService {
     console.log(`📝 Updating Notion entry ${id}...`);
     
     try {
-      const properties: Record<string, unknown> = {};
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const properties: Record<string, any> = {};
       
       if (updates.status) {
         properties.Status = { select: { name: updates.status } };
