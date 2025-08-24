@@ -1,0 +1,47 @@
+name: 🧪 Test Workflow (POC)
+
+on:
+  workflow_dispatch:
+    inputs:
+      page_id:
+        description: 'Test with specific page ID (optional)'
+        required: false
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 🛒 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci
+
+      - name: 🧪 Run test workflow
+        run: |
+          if [ -n "${{ github.event.inputs.page_id }}" ]; then
+            echo "🎯 Testing workflow with specific page: ${{ github.event.inputs.page_id }}"
+            npm run test:workflow -- --page-id "${{ github.event.inputs.page_id }}"
+          else
+            echo "🧪 Testing workflow (POC mode - no external services)"
+            npm run test:workflow
+          fi
+
+      - name: 📊 Test Summary
+        if: always()
+        run: |
+          echo "## 🧪 Test Workflow Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Mode**: POC simulation (no external APIs)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target Page**: ${{ github.event.inputs.page_id || 'All entries (simulated)' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: $([ ${{ job.status }} == 'success' ] && echo '✅ Success' || echo '❌ Failed')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Next Step**: Ready for real service integration" >> $GITHUB_STEP_SUMMARY
