@@ -1,0 +1,89 @@
+name: 🎼 Publish Sheet Music
+
+on:
+  workflow_dispatch:
+    inputs:
+      page_id:
+        description: 'Specific Notion page ID to process (optional)'
+        required: false
+        type: string
+      debug_mode:
+        description: 'Enable debug mode with screenshots'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 🛒 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build project
+        run: npm run build
+
+      - name: 🎭 Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: 🚀 Run sheet music publishing bot
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          WEBSITE_BASE_URL: ${{ secrets.WEBSITE_BASE_URL }}
+          WEBSITE_USERNAME: ${{ secrets.WEBSITE_USERNAME }}
+          WEBSITE_PASSWORD: ${{ secrets.WEBSITE_PASSWORD }}
+          PLAYWRIGHT_HEADLESS: 'true'
+          PLAYWRIGHT_TIMEOUT: '30000'
+        run: |
+          if [ -n "${{ github.event.inputs.page_id }}" ]; then
+            echo "🎯 Processing specific page: ${{ github.event.inputs.page_id }}"
+            npm start -- --page-id "${{ github.event.inputs.page_id }}"
+          else
+            echo "📋 Processing all ready entries"
+            npm start
+          fi
+
+      - name: 📸 Upload screenshots on failure
+        if: failure() && github.event.inputs.debug_mode == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots-${{ github.run_number }}
+          path: screenshots/
+          retention-days: 7
+
+      - name: 📋 Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: execution-logs-${{ github.run_number }}
+          path: |
+            *.log
+            logs/
+          retention-days: 14
+
+      - name: 📊 Summary
+        if: always()
+        run: |
+          echo "## 🎼 Sheet Music Publishing Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workflow**: $([ -n "${{ github.event.inputs.page_id }}" ] && echo "Single page" || echo "Batch processing")" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target Page**: ${{ github.event.inputs.page_id || 'All ready entries' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Debug Mode**: ${{ github.event.inputs.debug_mode }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: $([ ${{ job.status }} == 'success' ] && echo '✅ Success' || echo '❌ Failed')" >> $GITHUB_STEP_SUMMARY
