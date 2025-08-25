@@ -13,12 +13,18 @@ export class AIService {
 
   async generateContent(
     title: string,
-    existingDescription?: string
+    context: {
+      author?: string | undefined;
+      type?: string | undefined;
+      difficulty?: string | undefined;
+      key?: string | undefined;
+      existingDescription?: string | undefined;
+    } = {}
   ): Promise<AIGeneratedContent> {
     console.log(`🤖 Generating AI content for: "${title}"`);
 
     try {
-      const prompt = this.buildPrompt(title, existingDescription);
+      const prompt = this.buildPrompt(title, context);
 
       const completion = await this.client.chat.completions.create({
         model: appConfig.openai.model,
@@ -56,12 +62,29 @@ export class AIService {
     }
   }
 
-  private buildPrompt(title: string, existingDescription?: string): string {
+  private buildPrompt(
+    title: string,
+    context: {
+      author?: string | undefined;
+      type?: string | undefined;
+      difficulty?: string | undefined;
+      key?: string | undefined;
+      existingDescription?: string | undefined;
+    }
+  ): string {
+    const contextInfo = [
+      context.author && `Author: ${context.author}`,
+      context.type && `Type: ${context.type}`,
+      context.difficulty && `Difficulty: ${context.difficulty}`,
+      context.key && `Key: ${context.key}`,
+      context.existingDescription && `Existing Description: "${context.existingDescription}"`
+    ].filter(Boolean);
+
     return `
-Analyze this sheet music title and generate optimized content for publishing:
+Analyze this sheet music and generate optimized content for publishing:
 
 Title: "${title}"
-${existingDescription ? `Existing Description: "${existingDescription}"` : ""}
+${contextInfo.length > 0 ? `${contextInfo.join('\n')}\n` : ''}
 
 Please provide a JSON response with the following structure:
 {
@@ -72,11 +95,16 @@ Please provide a JSON response with the following structure:
 }
 
 Guidelines:
-- Description should be engaging and informative
+- Use ALL provided context information (author, type, difficulty, key) to create a rich description
+- Description should be engaging and informative (100-200 words)
 - Genre must be one of the listed options
-- Include 5-8 relevant tags
-- Focus on musical characteristics, difficulty, and appeal
-- Consider search engine optimization
+- Include 5-8 relevant tags based on the specific details provided
+- If author is provided, mention their musical style or background if known
+- If type is provided, explain what this instrumentation offers
+- If difficulty is provided, mention who this piece is suitable for
+- If key is provided, mention any musical characteristics of that key
+- Focus on what makes this specific piece unique and appealing
+- Consider search engine optimization with specific musical terms
 - Be accurate and helpful for potential buyers/downloaders
     `.trim();
   }

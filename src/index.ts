@@ -42,12 +42,29 @@ async function main(): Promise<void> {
     // Process each entry
     for (const entry of readyEntries) {
       console.log(`\n🔄 Processing: "${entry.name}"`);
+      console.log(`   📝 Author: ${entry.author || 'N/A'}`);
+      console.log(`   🎵 Type: ${entry.type || 'N/A'}`);
+      console.log(`   📊 Difficulty: ${entry.difficulty || 'N/A'}`);
+      console.log(`   🎼 Key: ${entry.key || 'N/A'}`);
+      console.log(`   🎹 MIDI Link: ${entry.midiLink?.substring(0, 50)}...`);
+      console.log(`   📄 PDF Link: ${entry.pdfLink?.substring(0, 50)}...`);
       const processingStart = new Date();
 
       try {
         // Generate AI content
         console.log("🤖 Step 2: Generating AI content...");
-        const aiContent = await ai.generateContent(entry.name, undefined);
+        const aiContent = await ai.generateContent(entry.name, {
+          author: entry.author,
+          type: entry.type,
+          difficulty: entry.difficulty,
+          key: entry.key,
+        });
+        console.log(`   ✨ Generated description: ${aiContent.description.substring(0, 100)}...`);
+        console.log(`   🏷️  Generated genre: ${aiContent.genre}`);
+        console.log(`   🏆 Generated tags: ${aiContent.tags.join(', ')}`);
+        if (aiContent.seoTitle && aiContent.seoTitle !== entry.name) {
+          console.log(`   🔍 SEO title: ${aiContent.seoTitle}`);
+        }
 
         // Skip website publishing for now
         console.log("🌐 Step 3: Skipping website publishing (config disabled)");
