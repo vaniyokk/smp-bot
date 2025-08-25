@@ -27,13 +27,16 @@ jobs:
         run: npm ci
 
       - name: 🧪 Run test workflow
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: |
           if [ -n "${{ github.event.inputs.page_id }}" ]; then
             echo "🎯 Testing workflow with specific page: ${{ github.event.inputs.page_id }}"
             npm run test:workflow -- --page-id "${{ github.event.inputs.page_id }}"
           else
-            echo "🧪 Testing workflow (POC mode - no external services)"
-            npm run test:workflow
+            echo "🧪 Testing Notion query for ready entries with MIDI and PDF links"
+            npm run test:notion-query
           fi
 
       - name: 📊 Test Summary

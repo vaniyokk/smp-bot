@@ -1,17 +1,21 @@
 export interface NotionSheetMusic {
   id: string;
-  title: string;
-  file?: {
-    url: string;
-    name: string;
-  } | undefined;
-  status: 'Draft' | 'Ready' | 'Published';
-  youtubeVideoId?: string | undefined;
-  publishedUrl?: string | undefined;
-  genre?: string | undefined;
-  description?: string | undefined;
+  name: string; // "Name" field is the title
+  author?: string | undefined;
+  type?: 'Piano Solo' | '4 Hands Piano' | 'Piano & Violin' | 'Violin' | 'Piano & Voice' | undefined;
+  status: 'No Publish' | 'Ready' | 'New';
+  difficulty?: 'Beginner' | 'Simple' | 'Medium' | 'Hard' | 'Extreme' | undefined;
+  key?: string | undefined; // Musical key (C major, G major, etc.)
+  videoLink?: string | undefined; // "Video Link" field
+  pdfLink?: string | undefined; // "PDF Link" field
+  midiLink?: string | undefined; // "MIDI Link" field
+  notesMMS?: string | undefined; // "Notes MMS" field
+  notesMusicnotes?: string | undefined; // "Notes Musicnotes" field
+  notesArrangeMe?: string | undefined; // "Notes ArrangeMe" field
+  reasoningMIDI?: string | undefined; // "Reasoning MIDI" field
+  listings?: string[] | undefined; // "🛒 Listings" relation field
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string | undefined;
 }
 
 export interface AIGeneratedContent {

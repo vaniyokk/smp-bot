@@ -29,7 +29,7 @@ export class NotionService {
         },
         sorts: [
           {
-            property: 'Created',
+            property: 'Created At',
             direction: 'ascending'
           }
         ]
@@ -44,15 +44,22 @@ export class NotionService {
         
         return {
           id: page.id,
-          title: this.extractTitle(props.Title),
-          file: this.extractFile(props.File),
+          name: this.extractTitle(props.Name),
+          author: this.extractText(props.Author),
+          type: this.extractSelect(props.Type) as NotionSheetMusic['type'],
           status: this.extractStatus(props.Status),
-          youtubeVideoId: this.extractText(props['YouTube Video ID']),
-          publishedUrl: this.extractUrl(props['Published URL']),
-          genre: this.extractSelect(props.Genre),
-          description: this.extractText(props.Description),
+          difficulty: this.extractSelect(props.Difficulty) as NotionSheetMusic['difficulty'],
+          key: this.extractSelect(props.Key),
+          videoLink: this.extractUrl(props['Video Link']),
+          pdfLink: this.extractText(props['PDF Link']),
+          midiLink: this.extractText(props['MIDI Link']),
+          notesMMS: this.extractText(props['Notes MMS']),
+          notesMusicnotes: this.extractText(props['Notes Musicnotes']),
+          notesArrangeMe: this.extractText(props['Notes ArrangeMe']),
+          reasoningMIDI: this.extractText(props['Reasoning MIDI']),
+          listings: this.extractRelation(props['🛒 Listings']),
           createdAt: page.created_time,
-          updatedAt: page.last_edited_time,
+          updatedAt: this.extractDate(props['Updated At']),
         };
       });
 
@@ -149,15 +156,15 @@ export class NotionService {
     return undefined;
   }
 
-  private extractStatus(prop: unknown): 'Draft' | 'Ready' | 'Published' {
+  private extractStatus(prop: unknown): 'No Publish' | 'Ready' | 'New' {
     if (prop && typeof prop === 'object' && 'select' in prop && prop.select &&
         typeof prop.select === 'object' && 'name' in prop.select) {
       const name = String(prop.select.name);
-      if (name === 'Draft' || name === 'Ready' || name === 'Published') {
+      if (name === 'No Publish' || name === 'Ready' || name === 'New') {
         return name;
       }
     }
-    return 'Draft';
+    return 'New';
   }
 
   private extractText(prop: unknown): string | undefined {
@@ -180,6 +187,30 @@ export class NotionService {
     if (prop && typeof prop === 'object' && 'select' in prop && prop.select &&
         typeof prop.select === 'object' && 'name' in prop.select) {
       return String(prop.select.name);
+    }
+    return undefined;
+  }
+
+  private extractRelation(prop: unknown): string[] | undefined {
+    if (prop && typeof prop === 'object' && 'relation' in prop && Array.isArray(prop.relation)) {
+      const relations = prop.relation
+        .map((rel: unknown) => {
+          if (rel && typeof rel === 'object' && 'id' in rel && typeof rel.id === 'string') {
+            return rel.id;
+          }
+          return null;
+        })
+        .filter((id: string | null): id is string => id !== null);
+      
+      return relations.length > 0 ? relations : undefined;
+    }
+    return undefined;
+  }
+
+  private extractDate(prop: unknown): string | undefined {
+    if (prop && typeof prop === 'object' && 'date' in prop && prop.date &&
+        typeof prop.date === 'object' && 'start' in prop.date && typeof prop.date.start === 'string') {
+      return prop.date.start;
     }
     return undefined;
   }

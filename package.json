@@ -15,6 +15,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:workflow": "tsx src/test-workflow.ts",
+    "test:notion-query": "tsx src/test-notion-query.ts",
     "prepare": "husky"
   },
   "keywords": [
