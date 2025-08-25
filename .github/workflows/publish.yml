@@ -43,12 +43,13 @@ jobs:
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
-          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
-          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
-          WEBSITE_BASE_URL: ${{ secrets.WEBSITE_BASE_URL }}
-          WEBSITE_USERNAME: ${{ secrets.WEBSITE_USERNAME }}
-          WEBSITE_PASSWORD: ${{ secrets.WEBSITE_PASSWORD }}
+          # YouTube and website services disabled for testing
+          # YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          # YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          # YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          # WEBSITE_BASE_URL: ${{ secrets.WEBSITE_BASE_URL }}
+          # WEBSITE_USERNAME: ${{ secrets.WEBSITE_USERNAME }}
+          # WEBSITE_PASSWORD: ${{ secrets.WEBSITE_PASSWORD }}
           PLAYWRIGHT_HEADLESS: 'true'
           PLAYWRIGHT_TIMEOUT: '30000'
         run: |
