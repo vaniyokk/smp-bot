@@ -22,10 +22,26 @@ export class NotionService {
       const response = await this.client.databases.query({
         database_id: appConfig.notion.databaseId,
         filter: {
-          property: 'Status',
-          select: {
-            equals: 'Ready'
-          }
+          and: [
+            {
+              property: 'Status',
+              select: {
+                equals: 'Ready'
+              }
+            },
+            {
+              property: 'MIDI Link',
+              rich_text: {
+                is_not_empty: true
+              }
+            },
+            {
+              property: 'PDF Link',
+              rich_text: {
+                is_not_empty: true
+              }
+            }
+          ]
         },
         sorts: [
           {
@@ -63,21 +79,8 @@ export class NotionService {
         };
       });
 
-      // Filter entries that have both MIDI and PDF links
-      const entriesWithLinks = entries.filter(entry => {
-        const hasMidiLink = entry.midiLink && entry.midiLink.trim() !== '';
-        const hasPdfLink = entry.pdfLink && entry.pdfLink.trim() !== '';
-        
-        if (!hasMidiLink || !hasPdfLink) {
-          console.log(`⚠️ Skipping "${entry.name}" - Missing ${!hasMidiLink ? 'MIDI' : ''}${!hasMidiLink && !hasPdfLink ? ' and ' : ''}${!hasPdfLink ? 'PDF' : ''} link(s)`);
-          return false;
-        }
-        
-        return true;
-      });
-
-      console.log(`✅ Found ${entries.length} ready entries, ${entriesWithLinks.length} with required MIDI and PDF links`);
-      return entriesWithLinks;
+      console.log(`✅ Found ${entries.length} ready entries with MIDI and PDF links`);
+      return entries;
       
     } catch (error) {
       console.error('❌ Failed to fetch Notion entries:', error);
