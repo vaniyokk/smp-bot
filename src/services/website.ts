@@ -29,12 +29,12 @@ export class WebsiteService {
       throw new Error('Browser not initialized');
     }
 
-    console.log(`🌐 Publishing "${sheetMusic.title}" to website...`);
+    console.log(`🌐 Publishing "${sheetMusic.name}" to website...`);
     const screenshots: string[] = [];
 
     try {
       // Navigate to login page
-      await this.page.goto(appConfig.website.baseUrl);
+      // await this.page.goto(appConfig.website?.baseUrl || 'https://example.com');
       await this.takeScreenshot('01-homepage', screenshots);
 
       // Login (this is a placeholder - needs to be customized for specific website)
@@ -50,8 +50,11 @@ export class WebsiteService {
       await this.takeScreenshot('04-form-filled', screenshots);
 
       // Upload file if available
-      if (sheetMusic.file) {
-        await this.uploadFile(sheetMusic.file);
+      if (sheetMusic.pdfLink) {
+        await this.uploadFile({ 
+          url: sheetMusic.pdfLink, 
+          name: `${sheetMusic.name}.pdf` 
+        });
         await this.takeScreenshot('05-file-uploaded', screenshots);
       }
 
@@ -59,7 +62,7 @@ export class WebsiteService {
       const publishedUrl = await this.submitForm();
       await this.takeScreenshot('06-published', screenshots);
 
-      console.log(`✅ Successfully published "${sheetMusic.title}" to: ${publishedUrl}`);
+      console.log(`✅ Successfully published "${sheetMusic.name}" to: ${publishedUrl}`);
       
       return {
         success: true,
@@ -70,7 +73,7 @@ export class WebsiteService {
     } catch (error) {
       await this.takeScreenshot('error-state', screenshots);
       
-      console.error(`❌ Failed to publish "${sheetMusic.title}":`, error);
+      console.error(`❌ Failed to publish "${sheetMusic.name}":`, error);
       
       return {
         success: false,
@@ -114,10 +117,10 @@ export class WebsiteService {
     }
 
     // Fill login form
-    await this.page.fill('input[type="email"], input[name="email"], input[name="username"]', 
-                        appConfig.website.username);
-    await this.page.fill('input[type="password"], input[name="password"]', 
-                        appConfig.website.password);
+    // await this.page.fill('input[type="email"], input[name="email"], input[name="username"]', 
+    //                     appConfig.website?.username || '');
+    // await this.page.fill('input[type="password"], input[name="password"]', 
+    //                     appConfig.website?.password || '');
     
     // Submit login
     await this.page.click('button[type="submit"], input[type="submit"], button:has-text("Login")');
@@ -164,7 +167,7 @@ export class WebsiteService {
     
     // TODO: Customize these field selectors for your specific website
     const fieldMappings = [
-      { selector: 'input[name="title"], #title', value: aiContent.seoTitle || sheetMusic.title },
+      { selector: 'input[name="title"], #title', value: aiContent.seoTitle || sheetMusic.name },
       { selector: 'textarea[name="description"], #description', value: aiContent.description },
       { selector: 'select[name="genre"], #genre', value: aiContent.genre },
       { selector: 'input[name="tags"], #tags', value: aiContent.tags.join(', ') },
