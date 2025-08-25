@@ -9,12 +9,12 @@ const envSchema = z.object({
   NOTION_DATABASE_ID: z.string().min(1, "NOTION_DATABASE_ID is required"),
   OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required"),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
-  YOUTUBE_CLIENT_ID: z.string().min(1, "YOUTUBE_CLIENT_ID is required"),
-  YOUTUBE_CLIENT_SECRET: z.string().min(1, "YOUTUBE_CLIENT_SECRET is required"),
-  YOUTUBE_REFRESH_TOKEN: z.string().min(1, "YOUTUBE_REFRESH_TOKEN is required"),
-  WEBSITE_BASE_URL: z.string().url("WEBSITE_BASE_URL must be a valid URL"),
-  WEBSITE_USERNAME: z.string().min(1, "WEBSITE_USERNAME is required"),
-  WEBSITE_PASSWORD: z.string().min(1, "WEBSITE_PASSWORD is required"),
+  // YOUTUBE_CLIENT_ID: z.string().min(1, "YOUTUBE_CLIENT_ID is required"),
+  // YOUTUBE_CLIENT_SECRET: z.string().min(1, "YOUTUBE_CLIENT_SECRET is required"),
+  // YOUTUBE_REFRESH_TOKEN: z.string().min(1, "YOUTUBE_REFRESH_TOKEN is required"),
+  // WEBSITE_BASE_URL: z.string().url("WEBSITE_BASE_URL must be a valid URL"),
+  // WEBSITE_USERNAME: z.string().min(1, "WEBSITE_USERNAME is required"),
+  // WEBSITE_PASSWORD: z.string().min(1, "WEBSITE_PASSWORD is required"),
   PLAYWRIGHT_HEADLESS: z
     .string()
     .default("true")
@@ -38,16 +38,16 @@ function getConfig(): Config {
         apiKey: env.OPENAI_API_KEY,
         model: env.OPENAI_MODEL,
       },
-      youtube: {
-        clientId: env.YOUTUBE_CLIENT_ID,
-        clientSecret: env.YOUTUBE_CLIENT_SECRET,
-        refreshToken: env.YOUTUBE_REFRESH_TOKEN,
-      },
-      website: {
-        baseUrl: env.WEBSITE_BASE_URL,
-        username: env.WEBSITE_USERNAME,
-        password: env.WEBSITE_PASSWORD,
-      },
+      // youtube: {
+      //   clientId: env.YOUTUBE_CLIENT_ID,
+      //   clientSecret: env.YOUTUBE_CLIENT_SECRET,
+      //   refreshToken: env.YOUTUBE_REFRESH_TOKEN,
+      // },
+      // website: {
+      //   baseUrl: env.WEBSITE_BASE_URL,
+      //   username: env.WEBSITE_USERNAME,
+      //   password: env.WEBSITE_PASSWORD,
+      // },
       playwright: {
         headless: env.PLAYWRIGHT_HEADLESS,
         timeout: env.PLAYWRIGHT_TIMEOUT,

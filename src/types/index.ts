@@ -2,9 +2,21 @@ export interface NotionSheetMusic {
   id: string;
   name: string; // "Name" field is the title
   author?: string | undefined;
-  type?: 'Piano Solo' | '4 Hands Piano' | 'Piano & Violin' | 'Violin' | 'Piano & Voice' | undefined;
-  status: 'No Publish' | 'Ready' | 'New';
-  difficulty?: 'Beginner' | 'Simple' | 'Medium' | 'Hard' | 'Extreme' | undefined;
+  type?:
+    | "Piano Solo"
+    | "4 Hands Piano"
+    | "Piano & Violin"
+    | "Violin"
+    | "Piano & Voice"
+    | undefined;
+  status: "No Publish" | "Ready" | "New" | "Published";
+  difficulty?:
+    | "Beginner"
+    | "Simple"
+    | "Medium"
+    | "Hard"
+    | "Extreme"
+    | undefined;
   key?: string | undefined; // Musical key (C major, G major, etc.)
   videoLink?: string | undefined; // "Video Link" field
   pdfLink?: string | undefined; // "PDF Link" field
@@ -14,6 +26,9 @@ export interface NotionSheetMusic {
   notesArrangeMe?: string | undefined; // "Notes ArrangeMe" field
   reasoningMIDI?: string | undefined; // "Reasoning MIDI" field
   listings?: string[] | undefined; // "🛒 Listings" relation field
+  publishedUrl?: string | undefined; // Published URL from website
+  genre?: string | undefined; // Generated genre from AI
+  description?: string | undefined; // Generated description from AI
   createdAt: string;
   updatedAt?: string | undefined;
 }
@@ -60,16 +75,16 @@ export interface Config {
     apiKey: string;
     model: string;
   };
-  youtube: {
-    clientId: string;
-    clientSecret: string;
-    refreshToken: string;
-  };
-  website: {
-    baseUrl: string;
-    username: string;
-    password: string;
-  };
+  // youtube: {
+  //   clientId: string;
+  //   clientSecret: string;
+  //   refreshToken: string;
+  // };
+  // website: {
+  //   baseUrl: string;
+  //   username: string;
+  //   password: string;
+  // };
   playwright: {
     headless: boolean;
     timeout: number;
