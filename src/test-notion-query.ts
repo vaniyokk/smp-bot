@@ -1,4 +1,5 @@
 import { Client } from "@notionhq/client";
+import { AIService } from "./services/ai.js";
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID;
@@ -20,6 +21,7 @@ async function testNotionQuery(): Promise<void> {
 
   try {
     const client = new Client({ auth: NOTION_TOKEN });
+    const aiService = new AIService();
     console.log(`📋 Database ID: ${NOTION_DATABASE_ID}`);
 
     // Query for entries with Status = "Ready"
@@ -90,7 +92,7 @@ async function testNotionQuery(): Promise<void> {
       console.log("\n📋 Ready entries with MIDI and PDF links:");
       console.log("=".repeat(80));
 
-      entriesWithLinks.forEach((page, index) => {
+      for (const [index, page] of entriesWithLinks.entries()) {
         if ("properties" in page) {
           const props = page.properties;
 
@@ -163,8 +165,24 @@ async function testNotionQuery(): Promise<void> {
           console.log(`   📄 PDF Link: ${pdfLink}`);
           console.log(`   🎥 Video Link: ${videoLink as string}`);
           console.log(`   🆔 Page ID: ${page.id}`);
+
+          // Generate SEO optimized description
+          try {
+            console.log(`   🤖 Generating SEO description for "${name}"...`);
+            const aiContent = await aiService.generateContent(name, undefined);
+            
+            console.log(`   \n   📄 SEO DESCRIPTION:`);
+            console.log(`   ${aiContent.description}`);
+            console.log(`   \n   🏷️  GENRE: ${aiContent.genre}`);
+            console.log(`   📋 TAGS: ${aiContent.tags.join(", ")}`);
+            if (aiContent.seoTitle && aiContent.seoTitle !== name) {
+              console.log(`   🔍 SEO TITLE: ${aiContent.seoTitle}`);
+            }
+          } catch (error) {
+            console.log(`   ⚠️  Failed to generate SEO description: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
         }
-      });
+      }
 
       console.log(`\n${"=".repeat(80)}`);
       console.log(

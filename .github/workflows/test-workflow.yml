@@ -30,6 +30,7 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           PAGE_ID="${{ github.event.inputs.page_id }}"
           echo "DEBUG: Page ID value: '$PAGE_ID'"
