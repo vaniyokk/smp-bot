@@ -3,6 +3,7 @@
 import { appConfig } from "@/config/index.js";
 import { AIService } from "@/services/ai.js";
 import { NotionService } from "@/services/notion.js";
+import { WebsiteManager } from "@/services/WebsiteManager.js";
 import type { ProcessingResult } from "@/types/index.js";
 
 async function main(): Promise<void> {
@@ -14,19 +15,20 @@ async function main(): Promise<void> {
   // Initialize services
   const notion = new NotionService();
   const ai = new AIService();
-  // Skip website and YouTube services for now
-  // const website = new WebsiteService();
+  const websiteManager = new WebsiteManager();
   // const youtube = new YouTubeService();
 
   try {
     console.log("📋 Configuration loaded successfully");
     console.log(`  - Notion Database: ${appConfig.notion.databaseId}`);
     console.log(`  - OpenAI Model: ${appConfig.openai.model}`);
-    // console.log(`  - Website: ${appConfig.website.baseUrl}`);
+    console.log(`  - Available Websites: ${websiteManager.getAvailableWebsites().join(", ") || "None"}`);
     console.log(`  - Playwright Headless: ${appConfig.playwright.headless}`);
 
-    // Initialize Playwright browser (skipped)
-    // await website.initialize();
+    // Initialize website services
+    if (websiteManager.getAvailableWebsites().length > 0) {
+      await websiteManager.initialize();
+    }
 
     // Core workflow implementation
     console.log("\n📥 Step 1: Fetching ready entries from Notion...");
@@ -66,11 +68,24 @@ async function main(): Promise<void> {
           console.log(`   🔍 SEO title: ${aiContent.seoTitle}`);
         }
 
-        // Skip website publishing for now
-        console.log("🌐 Step 3: Skipping website publishing (config disabled)");
-        const websiteResult = {
-          success: true,
-        };
+        // Publish to websites
+        let websiteResult;
+        if (websiteManager.getAvailableWebsites().length > 0) {
+          console.log("🌐 Step 3: Publishing to websites...");
+          const publishResults = await websiteManager.publishToAllWebsites(entry, aiContent);
+          
+          console.log(`   📊 Publishing results: ${publishResults.successCount}/${publishResults.totalCount} successful`);
+          
+          // Use the first successful result for the main workflow
+          const firstSuccess = publishResults.results.find(r => r.result.success);
+          websiteResult = firstSuccess ? firstSuccess.result : {
+            success: false,
+            error: `Failed to publish to any website. Results: ${publishResults.results.map(r => `${r.website}: ${r.result.success ? 'Success' : r.result.error}`).join('; ')}`
+          };
+        } else {
+          console.log("🌐 Step 3: No websites configured - skipping website publishing");
+          websiteResult = { success: true };
+        }
 
         let youtubeResult;
         // Skip YouTube integration for now
@@ -146,8 +161,10 @@ async function main(): Promise<void> {
     console.error("❌ Fatal error:", error);
     process.exit(1);
   } finally {
-    // Cleanup resources (skipped)
-    // await website.cleanup();
+    // Cleanup resources
+    if (websiteManager.getAvailableWebsites().length > 0) {
+      await websiteManager.cleanup();
+    }
   }
 }
 

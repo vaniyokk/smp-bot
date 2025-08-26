@@ -66,6 +66,14 @@ export interface ProcessingResult {
   endTime?: Date | undefined;
 }
 
+export interface WebsiteConfig {
+  name?: string | undefined;
+  baseUrl?: string | undefined;
+  username?: string | undefined;
+  password?: string | undefined;
+  enabled: boolean;
+}
+
 export interface Config {
   notion: {
     token: string;
@@ -75,16 +83,16 @@ export interface Config {
     apiKey: string;
     model: string;
   };
-  // youtube: {
-  //   clientId: string;
-  //   clientSecret: string;
-  //   refreshToken: string;
-  // };
-  // website: {
-  //   baseUrl: string;
-  //   username: string;
-  //   password: string;
-  // };
+  youtube?: {
+    clientId?: string | undefined;
+    clientSecret?: string | undefined;
+    refreshToken?: string | undefined;
+  } | undefined;
+  websites: {
+    website1: WebsiteConfig;
+    website2: WebsiteConfig;
+    website3: WebsiteConfig;
+  };
   playwright: {
     headless: boolean;
     timeout: number;

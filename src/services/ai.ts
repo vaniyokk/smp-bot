@@ -21,8 +21,34 @@ export class AIService {
       existingDescription?: string | undefined;
     } = {}
   ): Promise<AIGeneratedContent> {
-    console.log(`🤖 Generating AI content for: "${title}"`);
+    console.log(`🤖 Generating AI content for: "${title}" (using mock data to save tokens)`);
 
+    // TEMPORARY: Mock AI response to save tokens during testing
+    const mockContent: AIGeneratedContent = {
+      description: `Experience the beautiful composition "${title}"${context.author ? ` by ${context.author}` : ''}${context.type ? ` - a ${context.type.toLowerCase()}` : ''} that showcases${context.difficulty ? ` ${context.difficulty.toLowerCase()} difficulty` : ''} musical expression${context.key ? ` in the key of ${context.key}` : ''}. This carefully crafted piece offers musicians an engaging performance opportunity with rich harmonies and expressive dynamics. Perfect for both practice and performance, this sheet music captures the essence of contemporary musical artistry. Download now to add this compelling work to your musical repertoire.`,
+      genre: context.type === 'Piano Solo' ? 'Classical' : 
+             context.type === 'Piano & Voice' ? 'Vocal Music' :
+             context.type === 'Violin' ? 'String Music' : 'Classical',
+      tags: [
+        ...(context.author ? [context.author] : []),
+        ...(context.type ? [context.type.toLowerCase().replace(' ', '-')] : ['sheet-music']),
+        ...(context.key ? [context.key.toLowerCase().replace(' ', '-')] : []),
+        ...(context.difficulty ? [`${context.difficulty.toLowerCase()}-difficulty`] : []),
+        'classical-music',
+        'sheet-music',
+        'musical-score'
+      ].slice(0, 8), // Limit to 8 tags
+      seoTitle: `${context.author ? `${context.author} - ` : ''}${title}${context.difficulty ? ` | ${context.difficulty} Difficulty` : ''}${context.type ? ` ${context.type}` : ''}${context.key ? ` in ${context.key}` : ''}`
+    };
+
+    // Simulate processing delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    console.log(`✅ Generated AI content for "${title}"`);
+    return mockContent;
+
+    // ORIGINAL CODE - COMMENTED OUT TO SAVE TOKENS:
+    /*
     try {
       const prompt = this.buildPrompt(title, context);
 
@@ -60,6 +86,7 @@ export class AIService {
         }`
       );
     }
+    */
   }
 
   private buildPrompt(

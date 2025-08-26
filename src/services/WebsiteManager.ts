@@ -3,6 +3,7 @@ import type { WebsitePublishResult, NotionSheetMusic, AIGeneratedContent } from 
 import { Website1Service } from '@/services/websites/Website1Service.js';
 import { Website2Service } from '@/services/websites/Website2Service.js';
 import { Website3Service } from '@/services/websites/Website3Service.js';
+import { appConfig } from '@/config/index.js';
 
 /**
  * Manages publishing to multiple websites
@@ -12,12 +13,22 @@ export class WebsiteManager {
   private websites: IWebsitePublisher[] = [];
 
   constructor() {
-    // Initialize all website services
-    this.websites = [
-      new Website1Service(),
-      new Website2Service(),
-      new Website3Service(),
-    ];
+    // Initialize only enabled website services
+    this.websites = [];
+    
+    if (appConfig.websites.website1.enabled) {
+      this.websites.push(new Website1Service(appConfig.websites.website1));
+    }
+    
+    if (appConfig.websites.website2.enabled) {
+      this.websites.push(new Website2Service(appConfig.websites.website2));
+    }
+    
+    if (appConfig.websites.website3.enabled) {
+      this.websites.push(new Website3Service(appConfig.websites.website3));
+    }
+
+    console.log(`🌐 WebsiteManager initialized with ${this.websites.length} enabled websites`);
   }
 
   /**

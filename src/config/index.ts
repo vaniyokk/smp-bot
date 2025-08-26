@@ -9,12 +9,43 @@ const envSchema = z.object({
   NOTION_DATABASE_ID: z.string().min(1, "NOTION_DATABASE_ID is required"),
   OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required"),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
-  // YOUTUBE_CLIENT_ID: z.string().min(1, "YOUTUBE_CLIENT_ID is required"),
-  // YOUTUBE_CLIENT_SECRET: z.string().min(1, "YOUTUBE_CLIENT_SECRET is required"),
-  // YOUTUBE_REFRESH_TOKEN: z.string().min(1, "YOUTUBE_REFRESH_TOKEN is required"),
-  // WEBSITE_BASE_URL: z.string().url("WEBSITE_BASE_URL must be a valid URL"),
-  // WEBSITE_USERNAME: z.string().min(1, "WEBSITE_USERNAME is required"),
-  // WEBSITE_PASSWORD: z.string().min(1, "WEBSITE_PASSWORD is required"),
+  
+  // YouTube API Configuration (optional)
+  YOUTUBE_CLIENT_ID: z.string().optional(),
+  YOUTUBE_CLIENT_SECRET: z.string().optional(),
+  YOUTUBE_REFRESH_TOKEN: z.string().optional(),
+  
+  // Website 1 Configuration (optional)
+  WEBSITE1_NAME: z.string().optional(),
+  WEBSITE1_BASE_URL: z.string().url().optional(),
+  WEBSITE1_USERNAME: z.string().optional(),
+  WEBSITE1_PASSWORD: z.string().optional(),
+  WEBSITE1_ENABLED: z
+    .string()
+    .default("false")
+    .transform((val) => val === "true"),
+  
+  // Website 2 Configuration (optional)
+  WEBSITE2_NAME: z.string().optional(),
+  WEBSITE2_BASE_URL: z.string().url().optional(),
+  WEBSITE2_USERNAME: z.string().optional(),
+  WEBSITE2_PASSWORD: z.string().optional(),
+  WEBSITE2_ENABLED: z
+    .string()
+    .default("false")
+    .transform((val) => val === "true"),
+  
+  // Website 3 Configuration (optional)
+  WEBSITE3_NAME: z.string().optional(),
+  WEBSITE3_BASE_URL: z.string().url().optional(),
+  WEBSITE3_USERNAME: z.string().optional(),
+  WEBSITE3_PASSWORD: z.string().optional(),
+  WEBSITE3_ENABLED: z
+    .string()
+    .default("false")
+    .transform((val) => val === "true"),
+  
+  // Playwright Configuration
   PLAYWRIGHT_HEADLESS: z
     .string()
     .default("true")
@@ -38,16 +69,34 @@ function getConfig(): Config {
         apiKey: env.OPENAI_API_KEY,
         model: env.OPENAI_MODEL,
       },
-      // youtube: {
-      //   clientId: env.YOUTUBE_CLIENT_ID,
-      //   clientSecret: env.YOUTUBE_CLIENT_SECRET,
-      //   refreshToken: env.YOUTUBE_REFRESH_TOKEN,
-      // },
-      // website: {
-      //   baseUrl: env.WEBSITE_BASE_URL,
-      //   username: env.WEBSITE_USERNAME,
-      //   password: env.WEBSITE_PASSWORD,
-      // },
+      youtube: env.YOUTUBE_CLIENT_ID ? {
+        clientId: env.YOUTUBE_CLIENT_ID,
+        clientSecret: env.YOUTUBE_CLIENT_SECRET,
+        refreshToken: env.YOUTUBE_REFRESH_TOKEN,
+      } : undefined,
+      websites: {
+        website1: {
+          name: env.WEBSITE1_NAME,
+          baseUrl: env.WEBSITE1_BASE_URL,
+          username: env.WEBSITE1_USERNAME,
+          password: env.WEBSITE1_PASSWORD,
+          enabled: env.WEBSITE1_ENABLED,
+        },
+        website2: {
+          name: env.WEBSITE2_NAME,
+          baseUrl: env.WEBSITE2_BASE_URL,
+          username: env.WEBSITE2_USERNAME,
+          password: env.WEBSITE2_PASSWORD,
+          enabled: env.WEBSITE2_ENABLED,
+        },
+        website3: {
+          name: env.WEBSITE3_NAME,
+          baseUrl: env.WEBSITE3_BASE_URL,
+          username: env.WEBSITE3_USERNAME,
+          password: env.WEBSITE3_PASSWORD,
+          enabled: env.WEBSITE3_ENABLED,
+        },
+      },
       playwright: {
         headless: env.PLAYWRIGHT_HEADLESS,
         timeout: env.PLAYWRIGHT_TIMEOUT,
