@@ -4,6 +4,7 @@ import { Website1Service } from '@/services/websites/Website1Service.js';
 import { Website2Service } from '@/services/websites/Website2Service.js';
 import { Website3Service } from '@/services/websites/Website3Service.js';
 import { appConfig } from '@/config/index.js';
+import { rmSync, mkdirSync, existsSync } from 'fs';
 
 /**
  * Manages publishing to multiple websites
@@ -32,10 +33,35 @@ export class WebsiteManager {
   }
 
   /**
+   * Clean up screenshots folder before starting
+   */
+  private cleanupScreenshots(): void {
+    const screenshotsDir = 'screenshots';
+    
+    try {
+      if (existsSync(screenshotsDir)) {
+        console.log('🧹 Cleaning up old screenshots...');
+        rmSync(screenshotsDir, { recursive: true, force: true });
+        console.log('✅ Old screenshots removed');
+      }
+      
+      // Recreate the directory
+      mkdirSync(screenshotsDir, { recursive: true });
+      console.log('📁 Screenshots directory ready');
+    } catch (error) {
+      console.warn('⚠️ Could not cleanup screenshots directory:', error);
+      // Continue anyway, this isn't critical
+    }
+  }
+
+  /**
    * Initialize all website services
    */
   async initialize(): Promise<void> {
     console.log(`🌐 Initializing ${this.websites.length} website services...`);
+    
+    // Clean up screenshots before starting
+    this.cleanupScreenshots();
     
     const initPromises = this.websites.map(async (website) => {
       try {

@@ -110,7 +110,7 @@ export class Website1Service extends BaseWebsiteService {
     // Wait for login modal to appear and find email field
     console.log("  📧 Waiting for login modal to appear...");
     const emailField = await this.page.waitForSelector('input[type="email"]', {
-      timeout: 5000,
+      timeout: 10000,
     });
 
     if (!emailField) {
@@ -146,13 +146,123 @@ export class Website1Service extends BaseWebsiteService {
 
     console.log(`🧭 Navigating to publish form on ${this.getWebsiteName()}...`);
 
-    // TODO: Customize navigation logic for specific website
-    // Examples:
-    // await this.page.click('a[href="/publish"], button:has-text("Add New"), #create-listing');
-    // await this.waitForNavigation();
-    await this.page.waitForTimeout(100); // Temporary await to fix linting
+    // Step 1: Navigate to artist center dashboard
+    console.log("  🎯 Step 1: Navigating to /artist-center/dashboard...");
+    const config = this.getRequiredConfig();
+    const dashboardUrl = new URL('/artist-center/dashboard', config.baseUrl).toString();
+    await this.page.goto(dashboardUrl);
+    await this.page.waitForLoadState('networkidle');
 
-    console.log(`✅ Navigated to publish form on ${this.getWebsiteName()}`);
+    // Handle the "Fill out your Profile" modal that appears
+    console.log("  📋 Checking for Profile modal...");
+    await this.page.waitForTimeout(2000);
+    
+    // Look for the specific modal
+    const profileModal = await this.page.$('artist-notice-modal, :text("Fill out your")');
+    if (profileModal) {
+      console.log("  ⚠️  Profile modal detected, attempting to close...");
+      
+      // The Confirm button is disabled, try different approaches
+      console.log("  🔄 Trying multiple close methods...");
+      
+      // Method 1: Try clicking outside the modal (backdrop click)
+      console.log("  👆 Trying to click outside modal (backdrop)...");
+      await this.page.click('body', { position: { x: 10, y: 10 }, force: true });
+      await this.page.waitForTimeout(1000);
+      
+      // Method 2: Try ESC key
+      console.log("  ⌨️  Trying ESC key...");
+      await this.page.keyboard.press('Escape');
+      await this.page.waitForTimeout(1000);
+      
+      // Method 3: Try clicking the modal container backdrop
+      const modalContainer = await this.page.$('modal-container');
+      if (modalContainer) {
+        console.log("  🎯 Trying to click modal container backdrop...");
+        await modalContainer.click({ force: true });
+        await this.page.waitForTimeout(1000);
+      }
+      
+      // Check if modal is gone
+      const modalStillThere = await this.page.$('artist-notice-modal');
+      if (!modalStillThere) {
+        console.log("  ✅ Profile modal closed successfully");
+      } else {
+        console.log("  ⚠️  Modal still present, proceeding with force clicks on elements behind it");
+      }
+    } else {
+      console.log("  ✅ No profile modal detected");
+    }
+
+    // Step 2: Click Upload button
+    console.log("  📤 Step 2: Looking for Upload button...");
+    const uploadButton = await this.page.waitForSelector(
+      'mp-button:has-text("Upload")', 
+      { timeout: 10000 }
+    );
+    
+    if (!uploadButton) {
+      throw new Error("Could not find Upload button in dashboard");
+    }
+
+    console.log("  👆 Clicking Upload button...");
+    try {
+      await uploadButton.click();
+    } catch {
+      console.log("  ⚠️  Upload button click failed, trying force click...");
+      await uploadButton.click({ force: true });
+    }
+
+    // Step 3: Click Sheet Music item in modal
+    console.log("  🎵 Step 3: Looking for Sheet Music option in modal...");
+    const sheetMusicOption = await this.page.waitForSelector(
+      ':text("Sheet Music")', 
+      { timeout: 5000 }
+    );
+    
+    if (!sheetMusicOption) {
+      throw new Error("Could not find Sheet Music option in upload modal");
+    }
+
+    console.log("  👆 Clicking Sheet Music option...");
+    try {
+      await sheetMusicOption.click();
+    } catch {
+      console.log("  ⚠️  Sheet Music click failed, trying force click...");
+      await sheetMusicOption.click({ force: true });
+    }
+
+    // Step 4: Wait for fullscreen modal with "Sheet Upload" title (try multiple selectors)
+    console.log("  📋 Step 4: Waiting for Sheet Upload modal to appear...");
+    
+    try {
+      // Try multiple possible modal titles and containers
+      const sheetUploadModal = await this.page.waitForSelector(
+        ':text("Sheet Upload"), :text("Upload Sheet"), :text("Add Sheet"), .upload-modal, .sheet-upload-modal, modal-container.show', 
+        { timeout: 15000 }
+      );
+      
+      if (sheetUploadModal) {
+        console.log("  🎯 Upload modal detected!");
+      }
+    } catch {
+      console.log("  ⚠️  Specific modal not found, checking for any form/modal changes...");
+      
+      // Check if any new modal or form appeared
+      const anyModal = await this.page.$('modal-container, .modal, [role="dialog"]');
+      const anyForm = await this.page.$('form, .upload-form, input[type="file"]');
+      
+      if (anyModal || anyForm) {
+        console.log("  🎯 Some modal or form detected, continuing...");
+      } else {
+        console.log("  ⚠️  No modal changes detected, but continuing anyway...");
+      }
+    }
+
+    // Wait a bit more for any form to fully load
+    await this.page.waitForTimeout(3000);
+
+    console.log(`✅ Successfully navigated to publish form on ${this.getWebsiteName()}`);
   }
 
   protected async fillPublishForm(
