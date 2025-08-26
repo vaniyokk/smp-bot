@@ -57,7 +57,7 @@ export abstract class BaseWebsiteService implements IWebsitePublisher {
 
     try {
       const filename = `screenshots/${this.getWebsiteName().toLowerCase()}-${name}-${Date.now()}.png`;
-      await this.page.screenshot({ path: filename, fullPage: true });
+      await this.page.screenshot({ path: filename, fullPage: false });
       screenshots.push(filename);
       console.log(`📸 Screenshot saved: ${filename}`);
     } catch (error) {

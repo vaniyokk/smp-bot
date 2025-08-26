@@ -232,44 +232,65 @@ export class Website1Service extends BaseWebsiteService {
 
     // Step 3: Click Sheet Music item in modal
     console.log("  🎵 Step 3: Looking for Sheet Music option in modal...");
+
+    // Wait for upload modal to appear first
+    await this.page.waitForTimeout(2000);
+
+    // Use the working selector (most likely post-type-item[type="musicSheet"])
+    console.log("  🔍 Looking for Sheet Music option...");
     const sheetMusicOption = await this.page.waitForSelector(
-      'post-type-item[type="musicSheet"], :text("Sheet Music")',
-      { timeout: 5000 }
+      'post-type-item[type="musicSheet"]',
+      { timeout: 10000 }
     );
 
     if (!sheetMusicOption) {
-      throw new Error("Could not find Sheet Music option in upload modal");
+      throw new Error("Could not find Sheet Music option");
     }
 
     console.log("  👆 Clicking Sheet Music option...");
     try {
+      // Scroll element into view first
+      await sheetMusicOption.scrollIntoViewIfNeeded();
+      await this.page.waitForTimeout(1000);
       await sheetMusicOption.click();
+      console.log("  ✅ Sheet Music option clicked successfully");
     } catch {
-      console.log("  ⚠️  Sheet Music click failed, trying force click...");
-      await sheetMusicOption.click({ force: true });
+      console.log(`  ⚠️  Normal click failed, trying force click...`);
+      try {
+        await sheetMusicOption.click({ force: true });
+        console.log("  ✅ Force click succeeded");
+      } catch (forceError) {
+        const errorMsg =
+          forceError instanceof Error ? forceError.message : String(forceError);
+        console.log(`  ❌ Force click also failed: ${errorMsg}`);
+        throw new Error(`Failed to click Sheet Music option: ${errorMsg}`);
+      }
     }
 
-    // Step 4: Wait for fullscreen modal with "Sheet Upload" title (try multiple selectors)
+    // Step 4: Wait for Sheet Upload modal using specific HTML structure
     console.log("  📋 Step 4: Waiting for Sheet Upload modal to appear...");
 
     try {
-      // Try multiple possible modal titles and containers
+      // Use specific selectors based on actual modal HTML structure:
+      // <modal-container class="modal show">
+      //   <div class="modal-dialog sheet-write-modal">
+      //     <sheet-write-modal>
       const sheetUploadModal = await this.page.waitForSelector(
-        ':text("Sheet Upload") .upload-modal, .sheet-upload-modal, modal-container.show',
+        "sheet-write-modal, .sheet-write-modal, modal-container.show:has(sheet-write-modal)",
         { timeout: 15000 }
       );
 
       if (sheetUploadModal) {
-        console.log("  🎯 Upload modal detected!");
+        console.log("  🎯 Sheet Upload modal detected!");
       }
     } catch {
       console.log(
         "  ⚠️  Specific modal not found, checking for any form/modal changes..."
       );
 
-      // Check if any new modal or form appeared
+      // Fallback: Check if any new modal or form appeared
       const anyModal = await this.page.$(
-        'modal-container, .modal, [role="dialog"]'
+        'modal-container.show, .modal.show, [role="dialog"]'
       );
       const anyForm = await this.page.$(
         'form, .upload-form, input[type="file"]'
