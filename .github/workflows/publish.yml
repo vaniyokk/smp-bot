@@ -39,17 +39,39 @@ jobs:
 
       - name: 🚀 Run sheet music publishing bot
         env:
+          # Core Configuration
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
-          # YouTube and website services disabled for testing
-          # YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
-          # YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-          # YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
-          # WEBSITE_BASE_URL: ${{ secrets.WEBSITE_BASE_URL }}
-          # WEBSITE_USERNAME: ${{ secrets.WEBSITE_USERNAME }}
-          # WEBSITE_PASSWORD: ${{ secrets.WEBSITE_PASSWORD }}
+          
+          # YouTube API Configuration (optional)
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          
+          # Website 1 Configuration (e.g., MyMusicSheet)
+          WEBSITE1_NAME: ${{ vars.WEBSITE1_NAME }}
+          WEBSITE1_BASE_URL: ${{ vars.WEBSITE1_BASE_URL }}
+          WEBSITE1_USERNAME: ${{ secrets.WEBSITE1_USERNAME }}
+          WEBSITE1_PASSWORD: ${{ secrets.WEBSITE1_PASSWORD }}
+          WEBSITE1_ENABLED: ${{ vars.WEBSITE1_ENABLED || 'false' }}
+          
+          # Website 2 Configuration (e.g., Sheet Music Plus)
+          WEBSITE2_NAME: ${{ vars.WEBSITE2_NAME }}
+          WEBSITE2_BASE_URL: ${{ vars.WEBSITE2_BASE_URL }}
+          WEBSITE2_USERNAME: ${{ secrets.WEBSITE2_USERNAME }}
+          WEBSITE2_PASSWORD: ${{ secrets.WEBSITE2_PASSWORD }}
+          WEBSITE2_ENABLED: ${{ vars.WEBSITE2_ENABLED || 'false' }}
+          
+          # Website 3 Configuration (e.g., IMSLP)
+          WEBSITE3_NAME: ${{ vars.WEBSITE3_NAME }}
+          WEBSITE3_BASE_URL: ${{ vars.WEBSITE3_BASE_URL }}
+          WEBSITE3_USERNAME: ${{ secrets.WEBSITE3_USERNAME }}
+          WEBSITE3_PASSWORD: ${{ secrets.WEBSITE3_PASSWORD }}
+          WEBSITE3_ENABLED: ${{ vars.WEBSITE3_ENABLED || 'false' }}
+          
+          # Playwright Configuration
           PLAYWRIGHT_HEADLESS: 'true'
           PLAYWRIGHT_TIMEOUT: '30000'
         run: |
