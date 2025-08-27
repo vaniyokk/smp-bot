@@ -623,9 +623,9 @@ export class Website1Service extends BaseWebsiteService {
 
       if (!hasDropdown) {
         // Debug: list all mp-select elements
-        const allDropdowns = await this.page.$$("mp-select");
+        const allDropdownsCount = await this.page.locator("mp-select").count();
         console.log(
-          `    🔍 Found ${allDropdowns.length} mp-select elements total`
+          `    🔍 Found ${allDropdownsCount} mp-select elements total`
         );
 
         throw new Error(
@@ -713,7 +713,9 @@ export class Website1Service extends BaseWebsiteService {
               {
                 name: "Text element click",
                 action: async (): Promise<void> => {
-                  const textEl = await this.page!.$(`text="${value}"`);
+                  const textElLocator = this.page!.locator(`text="${value}"`).first();
+                  const hasTextEl = await this.page!.locator(`text="${value}"`).count() > 0;
+                  const textEl = hasTextEl ? textElLocator : null;
                   if (textEl) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     await textEl.evaluate((el: any) => {
@@ -856,7 +858,7 @@ export class Website1Service extends BaseWebsiteService {
     console.log("    🔍 Checking if Piano is already selected...");
     const selectedPianoSelector =
       '.instruments.active mp-button.right-icon:has(span.label):has-text("Piano"):has(mp-icon[style*="close"])';
-    const isAlreadySelected = await this.page.$(selectedPianoSelector);
+    const isAlreadySelected = await this.page.locator(selectedPianoSelector).count() > 0;
 
     if (isAlreadySelected) {
       console.log(
