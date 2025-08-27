@@ -409,18 +409,22 @@ export class Website1Service extends BaseWebsiteService {
     console.log(`    🔍 Looking for instrumentation dropdown...`);
 
     // Open dropdown
-    const dropdownLocator = this.page.locator('[formcontrolname="instrumentation"] mp-select');
+    const dropdownLocator = this.page.locator(
+      '[formcontrolname="instrumentation"] mp-select'
+    );
     console.log(`    👆 Opening dropdown by clicking...`);
     await dropdownLocator.click();
 
     console.log(`    🎯 Looking for option: "${value}"`);
 
     // Wait for CDK overlay to appear and find option
-    const optionLocator = this.page.locator(`.cdk-overlay-pane mp-menu-cell:has-text("${value}")`).first();
-    
+    const optionLocator = this.page
+      .locator(`.cdk-overlay-pane mp-menu-cell:has-text("${value}")`)
+      .first();
+
     // Wait for the option to be available (CDK overlay takes time to load)
     await optionLocator.waitFor({ timeout: 10000 });
-    
+
     console.log(`    ✅ Found option "${value}", clicking with force...`);
     await optionLocator.click({ force: true });
     console.log(`    ✅ Force click succeeded: "${value}"`);
@@ -432,22 +436,63 @@ export class Website1Service extends BaseWebsiteService {
   ): Promise<void> {
     if (!this.page) throw new Error("Page not available");
 
-    console.log(`    📋 Filling ${formControlName}: "${value}"`);
+    try {
+      console.log(`    📋 Filling ${formControlName}: "${value}"`);
 
-    // Open dropdown using proven selector
-    const dropdownLocator = this.page.locator(`[formcontrolname="${formControlName}"] mp-select`);
-    await dropdownLocator.click();
+      // Find dropdown with fallback selector
+      let dropdownLocator = this.page.locator(
+        `mp-select[formcontrolname="${formControlName}"]`
+      );
+      let hasDropdown = (await dropdownLocator.count()) > 0;
 
-    // Find and click option using proven JavaScript click approach
-    const optionLocator = this.page.locator(`mp-menu-cell:has-text("${value}")`).first();
-    
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await optionLocator.evaluate((element: any) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      element.click();
-    });
+      if (!hasDropdown) {
+        dropdownLocator = this.page.locator(
+          `[formcontrolname="${formControlName}"] mp-select`
+        );
+        hasDropdown = (await dropdownLocator.count()) > 0;
+      }
 
-    console.log(`    ✅ Selected "${value}"`);
+      if (!hasDropdown) {
+        throw new Error(
+          `Could not find dropdown with formcontrolname="${formControlName}"`
+        );
+      }
+
+      await dropdownLocator.click({ force: true });
+
+      // Find and click option
+      const optionLocator = this.page
+        .locator(`mp-menu-cell:has-text("${value}")`)
+        .first();
+      await optionLocator.waitFor({ timeout: 10000 });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await optionLocator.evaluate((element: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        element.click();
+      });
+
+      // Trigger focus/blur for Angular form validation
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await dropdownLocator.evaluate((el: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          el.focus();
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          el.blur();
+        });
+      } catch {
+        // Continue if focus/blur fails
+      }
+
+      console.log(`    ✅ Selected "${value}"`);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `    ❌ Failed to fill dropdown ${formControlName}: ${errorMsg}`
+      );
+      throw error;
+    }
   }
 
   /**
@@ -500,12 +545,12 @@ export class Website1Service extends BaseWebsiteService {
     try {
       await pianoButtonLocator.scrollIntoViewIfNeeded();
       await pianoButtonLocator.click();
-      
+
       // Wait for DOM state change and verify Piano is now selected
       await this.page.waitForTimeout(1000); // Essential: DOM needs time to update visual state
       const nowSelected =
         (await this.page.locator(selectedPianoSelector).count()) > 0;
-      
+
       if (nowSelected) {
         console.log(
           `    ✅ Standard click succeeded - Piano is now selected (verified by dark background and close icon)`
@@ -520,7 +565,7 @@ export class Website1Service extends BaseWebsiteService {
       console.log(`    ❌ Standard click failed: ${errorMsg}`);
       throw new Error(`Piano selection failed: ${errorMsg}`);
     }
-  
+
     // Piano selection completed successfully
   }
 }
