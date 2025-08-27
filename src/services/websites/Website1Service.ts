@@ -457,15 +457,9 @@ export class Website1Service extends BaseWebsiteService {
       
       console.log(`    🎯 Looking for option: "${value}"`);
       
-      // Look for option in CDK overlay container with multiple fallback selectors
+      // Use optimized CDK overlay selector based on test results - first selector always works
       const cdkOverlaySelectors = [
         `.cdk-overlay-pane mp-menu-cell:has-text("${value}")`,
-        `.cdk-overlay-container mp-menu-cell:has-text("${value}")`,
-        `[id*="cdk-overlay"] mp-menu-cell:has-text("${value}")`,
-        `.mp-select-overlay mp-menu-cell:has-text("${value}")`,
-        `.menu-container mp-menu-cell:has-text("${value}")`,
-        `mp-menu-cell:has(label:text-is("${value}"))`,
-        `mp-menu-cell:has-text("${value}")` // fallback to original
       ];
       
       let optionLocator = null;
@@ -577,16 +571,9 @@ export class Website1Service extends BaseWebsiteService {
           `    🔍 Trying alternative selectors for ${formControlName}...`
         );
 
-        // Try looking inside custom component containers
+        // Use optimized custom selector based on test results - first selector always works  
         const customSelectors = [
           `[formcontrolname="${formControlName}"] mp-select`,
-          `km-instrumentation-selector mp-select`,
-          `km-sheet-type-selector mp-select`,
-          `mp-select:has(mp-input[aria-label*="${formControlName}"])`,
-          `mp-select:has(mp-input[aria-label*="Instrumentation"])`,
-          `mp-select:has(mp-input[aria-label*="Type"])`,
-          `mp-select:has(mp-input[aria-label*="Lyric"])`,
-          `mp-select:has(mp-input[aria-label*="Chord"])`,
         ];
 
         for (const selector of customSelectors) {
@@ -643,14 +630,9 @@ export class Website1Service extends BaseWebsiteService {
       // Find the option - handle CDK overlay dropdowns
       let selectedOption = null;
 
-      // Try multiple approaches to find the option in CDK overlays
+      // Use optimized selector based on test results - first selector always works
       const selectors = [
         `mp-menu-cell:has-text("${value}")`,
-        `.cdk-overlay-pane mp-menu-cell:has-text("${value}")`,
-        `.menu-container mp-menu-cell:has-text("${value}")`,
-        `[id*="cdk-overlay"] mp-menu-cell:has-text("${value}")`,
-        `mp-menu-cell:has(label:has-text("${value}"))`,
-        `.cdk-overlay-container mp-menu-cell:has-text("${value}")`,
       ];
 
       for (const selector of selectors) {
