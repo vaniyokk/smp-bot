@@ -316,18 +316,22 @@ export class Website1Service extends BaseWebsiteService {
     console.log(`📝 Filling publish form on ${this.getWebsiteName()}...`);
 
     try {
-
       // Step 1: Select Piano instrument - wait for visual confirmation
       console.log("  🎹 Step 1: Selecting Piano instrument...");
       await this.selectPianoInstrument();
 
       // Step 2: Fill Difficulty dropdown
       console.log("  📊 Step 2: Selecting difficulty...");
-      await this.fillDropdown("level", this.mapDifficulty(sheetMusic.difficulty));
+      await this.fillDropdown(
+        "level",
+        this.mapDifficulty(sheetMusic.difficulty)
+      );
 
       // Step 3: Fill Instrumentation dropdown
       console.log("  🎼 Step 3: Selecting instrumentation...");
-      await this.fillInstrumentationDropdown(this.mapInstrumentation(sheetMusic.type));
+      await this.fillInstrumentationDropdown(
+        this.mapInstrumentation(sheetMusic.type)
+      );
 
       // Step 4: Fill Type dropdown (always "2 Staves")
       console.log("  📋 Step 4: Selecting type...");
@@ -407,34 +411,44 @@ export class Website1Service extends BaseWebsiteService {
     if (!this.page) throw new Error("Page not available");
 
     console.log(`    🔍 Looking for instrumentation dropdown...`);
-    
+
     // Try to find a native HTML select element first using locator
-    const selectLocator = this.page.locator('[formcontrolname="instrumentation"] select');
+    const selectLocator = this.page.locator(
+      '[formcontrolname="instrumentation"] select'
+    );
     const selectCount = await selectLocator.count();
-    
+
     if (selectCount > 0) {
       console.log(`    ✅ Found native select element for instrumentation`);
       console.log(`    📋 Using Playwright's selectOption: "${value}"`);
-      
+
       try {
         await selectLocator.selectOption({ label: value });
-        console.log(`    ✅ Successfully selected "${value}" using selectOption`);
+        console.log(
+          `    ✅ Successfully selected "${value}" using selectOption`
+        );
         return;
       } catch {
         console.log(`    ⚠️ selectOption failed, trying by value...`);
         try {
           await selectLocator.selectOption(value);
-          console.log(`    ✅ Successfully selected "${value}" using selectOption by value`);
+          console.log(
+            `    ✅ Successfully selected "${value}" using selectOption by value`
+          );
           return;
         } catch {
-          console.log(`    ⚠️ Native selectOption failed, falling back to custom approach`);
+          console.log(
+            `    ⚠️ Native selectOption failed, falling back to custom approach`
+          );
         }
       }
     }
-    
+
     // Fallback to custom dropdown approach for Angular Material
     console.log(`    🔍 Looking for Angular Material dropdown...`);
-    const dropdownLocator = this.page.locator('[formcontrolname="instrumentation"] mp-select');
+    const dropdownLocator = this.page.locator(
+      '[formcontrolname="instrumentation"] mp-select'
+    );
     const dropdownCount = await dropdownLocator.count();
     if (dropdownCount === 0) {
       throw new Error("Could not find instrumentation dropdown");
@@ -442,26 +456,28 @@ export class Website1Service extends BaseWebsiteService {
 
     console.log(`    ✅ Found Angular Material dropdown`);
     console.log(`    📋 Using selectOption on the page for "${value}"`);
-    
+
     // Try Playwright's page-level selectOption which works with custom dropdowns
     try {
-      await this.page.selectOption('[formcontrolname="instrumentation"]', { label: value });
+      await this.page.selectOption('[formcontrolname="instrumentation"]', {
+        label: value,
+      });
       console.log(`    ✅ Page selectOption succeeded: "${value}"`);
     } catch {
       console.log(`    ⚠️ Page selectOption failed, trying click approach...`);
-      
+
       // Fallback to click approach with better reliability
       console.log(`    👆 Opening dropdown by clicking...`);
       await dropdownLocator.click();
       await this.page.waitForTimeout(500);
-      
+
       console.log(`    🎯 Looking for option: "${value}"`);
-      
+
       // Use optimized CDK overlay selector based on test results - first selector always works
       const cdkOverlaySelectors = [
         `.cdk-overlay-pane mp-menu-cell:has-text("${value}")`,
       ];
-      
+
       let optionLocator = null;
       for (const selector of cdkOverlaySelectors) {
         try {
@@ -469,14 +485,16 @@ export class Website1Service extends BaseWebsiteService {
           const count = await locator.count();
           if (count > 0) {
             optionLocator = locator.first();
-            console.log(`    ✅ Found option with CDK overlay selector: ${selector}`);
+            console.log(
+              `    ✅ Found option with CDK overlay selector: ${selector}`
+            );
             break;
           }
         } catch {
           console.log(`    ⚠️ Selector failed: ${selector}`);
         }
       }
-      
+
       if (!optionLocator) {
         // Wait a bit more and try one more time in case overlay is still loading
         await this.page.waitForTimeout(1000);
@@ -486,50 +504,60 @@ export class Website1Service extends BaseWebsiteService {
             const count = await locator.count();
             if (count > 0) {
               optionLocator = locator.first();
-              console.log(`    ✅ Found option after retry with selector: ${selector}`);
+              console.log(
+                `    ✅ Found option after retry with selector: ${selector}`
+              );
               break;
             }
           } catch {
             continue;
           }
         }
-        
+
         if (!optionLocator) {
-          throw new Error(`Could not find instrumentation option: ${value} - tried CDK overlay selectors`);
+          throw new Error(
+            `Could not find instrumentation option: ${value} - tried CDK overlay selectors`
+          );
         }
       }
-      
-      console.log(`    ✅ Found option "${value}", trying multiple click approaches...`);
-      
+
+      console.log(
+        `    ✅ Found option "${value}", trying multiple click approaches...`
+      );
+
       // Try multiple approaches since regular click might fail due to visibility detection
       const clickMethods = [
         {
           name: "Force click (bypass visibility checks)",
-          action: async (): Promise<void> => await optionLocator.click({ force: true })
+          action: async (): Promise<void> =>
+            await optionLocator.click({ force: true }),
         },
         {
           name: "Coordinate-based click",
           action: async (): Promise<void> => {
             const box = await optionLocator.boundingBox();
             if (box) {
-              await this.page!.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+              await this.page!.mouse.click(
+                box.x + box.width / 2,
+                box.y + box.height / 2
+              );
             } else {
               throw new Error("No bounding box");
             }
-          }
+          },
         },
         {
-          name: "JavaScript evaluate click", 
+          name: "JavaScript evaluate click",
           action: async (): Promise<void> => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await optionLocator.evaluate((el: any) => {
               // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
               el.click();
             });
-          }
-        }
+          },
+        },
       ];
-      
+
       let success = false;
       for (const method of clickMethods) {
         try {
@@ -539,14 +567,17 @@ export class Website1Service extends BaseWebsiteService {
           console.log(`    ✅ ${method.name} succeeded: "${value}"`);
           break;
         } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
+          const errorMsg =
+            error instanceof Error ? error.message : String(error);
           console.log(`    ⚠️ ${method.name} failed: ${errorMsg}`);
           continue;
         }
       }
-      
+
       if (!success) {
-        throw new Error(`All click methods failed for instrumentation option: ${value}`);
+        throw new Error(
+          `All click methods failed for instrumentation option: ${value}`
+        );
       }
     }
   }
@@ -571,7 +602,7 @@ export class Website1Service extends BaseWebsiteService {
           `    🔍 Trying alternative selectors for ${formControlName}...`
         );
 
-        // Use optimized custom selector based on test results - first selector always works  
+        // Use optimized custom selector based on test results - first selector always works
         const customSelectors = [
           `[formcontrolname="${formControlName}"] mp-select`,
         ];
@@ -599,7 +630,10 @@ export class Website1Service extends BaseWebsiteService {
 
       // Take screenshot before opening dropdown (if instrumentation)
       if (formControlName === "instrumentation") {
-        await this.takeScreenshot(`before-${formControlName}-click-${Date.now()}`, []);
+        await this.takeScreenshot(
+          `before-${formControlName}-click-${Date.now()}`,
+          []
+        );
       }
 
       // Step 2: Click the dropdown to open the menu
@@ -616,7 +650,10 @@ export class Website1Service extends BaseWebsiteService {
       // Take screenshot after opening dropdown (if instrumentation)
       if (formControlName === "instrumentation") {
         await this.page.waitForTimeout(500); // Wait for dropdown animation
-        await this.takeScreenshot(`after-${formControlName}-opened-${Date.now()}`, []);
+        await this.takeScreenshot(
+          `after-${formControlName}-opened-${Date.now()}`,
+          []
+        );
       }
 
       // Step 3: Playwright automatically waits for dropdown options to appear
@@ -631,9 +668,7 @@ export class Website1Service extends BaseWebsiteService {
       let selectedOption = null;
 
       // Use optimized selector based on test results - first selector always works
-      const selectors = [
-        `mp-menu-cell:has-text("${value}")`,
-      ];
+      const selectors = [`mp-menu-cell:has-text("${value}")`];
 
       for (const selector of selectors) {
         try {
@@ -694,7 +729,10 @@ export class Website1Service extends BaseWebsiteService {
                 // Take screenshot after clicking option (if instrumentation)
                 if (formControlName === "instrumentation") {
                   await this.page.waitForTimeout(300);
-                  await this.takeScreenshot(`after-${formControlName}-selected-${Date.now()}`, []);
+                  await this.takeScreenshot(
+                    `after-${formControlName}-selected-${Date.now()}`,
+                    []
+                  );
                 }
 
                 // Trigger focus/blur on the dropdown to ensure Angular form validation recognizes the change
@@ -706,15 +744,22 @@ export class Website1Service extends BaseWebsiteService {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                     el.blur();
                   });
-                  console.log(`    🔄 Triggered focus/blur to update form validation`);
+                  console.log(
+                    `    🔄 Triggered focus/blur to update form validation`
+                  );
                 } catch {
-                  console.log(`    ⚠️ Could not trigger focus/blur, but continuing...`);
+                  console.log(
+                    `    ⚠️ Could not trigger focus/blur, but continuing...`
+                  );
                 }
 
                 // Take final screenshot after focus/blur (if instrumentation)
                 if (formControlName === "instrumentation") {
                   await this.page.waitForTimeout(500);
-                  await this.takeScreenshot(`final-${formControlName}-validation-${Date.now()}`, []);
+                  await this.takeScreenshot(
+                    `final-${formControlName}-validation-${Date.now()}`,
+                    []
+                  );
                 }
 
                 // Wait for dropdown to close and return
@@ -796,51 +841,100 @@ export class Website1Service extends BaseWebsiteService {
     console.log("    🎯 Looking for Piano instrument button...");
 
     // Wait for instrument selector to be visible
-    await this.page.waitForSelector('km-instrument-selector', { timeout: 10000 });
+    await this.page.waitForSelector("km-instrument-selector", {
+      timeout: 10000,
+    });
 
-    // Look for Piano button with multiple selectors
-    const pianoSelectors = [
-      'mp-button:has(span.label):has-text("Piano"):not(:has-text("Piano 61keys"))',
-      'mp-button:has(.label):has-text("Piano")',
-      'mp-button[class*="button"]:has(span:text("Piano"))',
-      'km-instrument-selector mp-button:has-text("Piano")',
+    // Check if Piano is already selected (has dark background and close icon)
+    console.log("    🔍 Checking if Piano is already selected...");
+    const selectedPianoSelector =
+      '.instruments.active mp-button.right-icon:has(span.label):has-text("Piano"):has(mp-icon[style*="close"])';
+    const isAlreadySelected = await this.page.$(selectedPianoSelector);
+
+    if (isAlreadySelected) {
+      console.log(
+        "    ✅ Piano is already selected (has dark background and close icon)"
+      );
+      return;
+    }
+
+    // Find the unselected Piano button to click
+    console.log(
+      "    🎯 Piano not selected, looking for Piano button to click..."
+    );
+    const pianoSelector =
+      '.instruments.active mp-button:has(span.label):has-text("Piano"):not(:has-text("Piano 61keys"))';
+    const pianoButton = await this.page.$(pianoSelector);
+
+    if (!pianoButton) {
+      throw new Error(
+        "Could not find Piano instrument button in active instruments section"
+      );
+    }
+
+    console.log("    ✅ Found unselected Piano button");
+    console.log("    👆 Clicking Piano button to select it...");
+
+    // Try different click approaches
+    const clickMethods = [
+      {
+        name: "Standard click",
+        action: async (): Promise<void> => {
+          await pianoButton.scrollIntoViewIfNeeded();
+          await this.page!.waitForTimeout(500);
+          await pianoButton.click();
+        },
+      },
+      {
+        name: "Force click",
+        action: async (): Promise<void> => {
+          await pianoButton.click({ force: true });
+        },
+      },
+      {
+        name: "JavaScript click",
+        action: async (): Promise<void> => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await pianoButton.evaluate((el: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+            el.click();
+          });
+        },
+      },
     ];
 
-    let pianoButton = null;
-    for (const selector of pianoSelectors) {
+    let clickSucceeded = false;
+    for (const method of clickMethods) {
       try {
-        pianoButton = await this.page.$(selector);
-        if (pianoButton) {
-          console.log(`    ✅ Found Piano button with selector: ${selector}`);
+        console.log(`    🎯 Trying ${method.name}...`);
+        await method.action();
+
+        // Wait for state change and verify Piano is now selected
+        await this.page.waitForTimeout(1000);
+        const nowSelected = await this.page.$(selectedPianoSelector);
+
+        if (nowSelected) {
+          console.log(
+            `    ✅ ${method.name} succeeded - Piano is now selected (verified by dark background and close icon)`
+          );
+          clickSucceeded = true;
           break;
+        } else {
+          console.log(
+            `    ⚠️ ${method.name} clicked but Piano not selected (no visual state change)`
+          );
         }
-      } catch {
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.log(`    ❌ ${method.name} failed: ${errorMsg}`);
         continue;
       }
     }
 
-    if (!pianoButton) {
-      throw new Error("Could not find Piano instrument button");
-    }
-
-    console.log("    👆 Clicking Piano button (using same reliable approach as Sheet Music selection)...");
-    
-    try {
-      // Use the same reliable approach as Sheet Music option
-      await pianoButton.scrollIntoViewIfNeeded();
-      await this.page.waitForTimeout(1000);
-      await pianoButton.click();
-      console.log("    ✅ Piano button clicked successfully");
-    } catch {
-      console.log("    ⚠️ Normal click failed, trying force click...");
-      try {
-        await pianoButton.click({ force: true });
-        console.log("    ✅ Force click succeeded");
-      } catch (forceError) {
-        const errorMsg = forceError instanceof Error ? forceError.message : String(forceError);
-        console.log(`    ❌ Force click also failed: ${errorMsg}`);
-        throw new Error(`Failed to click Piano button: ${errorMsg}`);
-      }
+    if (!clickSucceeded) {
+      throw new Error(
+        "Failed to select Piano instrument - all click methods failed or didn't change state"
+      );
     }
   }
 }
