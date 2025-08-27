@@ -4,14 +4,15 @@ import type {
   NotionSheetMusic,
   WebsitePublishResult,
 } from "@/types/index.js";
+import { mapDifficulty, mapInstrumentation } from "./adapters.js";
 
 /**
- * Website1Service - First website implementation
- * TODO: Replace with actual website name and customize for specific site
+ * Website1Service - MyMusicSheet implementation
+ * Handles sheet music publishing to MyMusicSheet platform
  */
 export class Website1Service extends BaseWebsiteService {
   getWebsiteName(): string {
-    return this.websiteConfig.name || "Website1";
+    return this.websiteConfig.name || "MyMusicSheet";
   }
 
   async publishSheetMusic(
@@ -58,8 +59,6 @@ export class Website1Service extends BaseWebsiteService {
         screenshots,
       };
     } catch (error) {
-      await this.takeScreenshot("error-state", screenshots);
-
       console.error(
         `❌ Failed to publish "${
           sheetMusic.name
@@ -126,7 +125,8 @@ export class Website1Service extends BaseWebsiteService {
     await this.page.waitForTimeout(5000);
 
     // Verify login was successful (modal should be gone)
-    const modalStillVisible = await this.page.locator('input[type="email"]').count() > 0;
+    const modalStillVisible =
+      (await this.page.locator('input[type="email"]').count()) > 0;
     if (modalStillVisible) {
       throw new Error("Login may have failed - modal still visible");
     }
@@ -154,7 +154,8 @@ export class Website1Service extends BaseWebsiteService {
     await this.page.waitForTimeout(2000);
 
     // Look for the notification modal (can have any text, not just "Fill out your")
-    const notificationModal = await this.page.locator("artist-notice-modal").count() > 0;
+    const notificationModal =
+      (await this.page.locator("artist-notice-modal").count()) > 0;
     if (notificationModal) {
       console.log(
         "  ⚠️  Notification modal detected, attempting to close properly..."
@@ -162,7 +163,7 @@ export class Website1Service extends BaseWebsiteService {
 
       // Find the main content area that needs to be scrolled
       const mainContentLocator = this.page.locator("artist-notice-modal main");
-      const hasMainContent = await mainContentLocator.count() > 0;
+      const hasMainContent = (await mainContentLocator.count()) > 0;
       if (hasMainContent) {
         console.log(
           "  📜 Scrolling down in modal content to enable Confirm button..."
@@ -182,7 +183,7 @@ export class Website1Service extends BaseWebsiteService {
         const confirmButtonLocator = this.page.locator(
           'artist-notice-modal mp-button:has-text("Confirm")'
         );
-        const hasConfirmButton = await confirmButtonLocator.count() > 0;
+        const hasConfirmButton = (await confirmButtonLocator.count()) > 0;
         if (hasConfirmButton) {
           console.log("  ✅ Clicking Confirm button...");
           await confirmButtonLocator.click();
@@ -191,7 +192,8 @@ export class Website1Service extends BaseWebsiteService {
           await this.page.waitForTimeout(2000);
 
           // Check if modal is gone
-          const modalGone = await this.page.locator("artist-notice-modal").count() === 0;
+          const modalGone =
+            (await this.page.locator("artist-notice-modal").count()) === 0;
           if (modalGone) {
             console.log("  🎯 Notification modal closed successfully!");
           } else {
@@ -266,10 +268,6 @@ export class Website1Service extends BaseWebsiteService {
     console.log("  📋 Step 4: Waiting for Sheet Upload modal to appear...");
 
     try {
-      // Use specific selectors based on actual modal HTML structure:
-      // <modal-container class="modal show">
-      //   <div class="modal-dialog sheet-write-modal">
-      //     <sheet-write-modal>
       const sheetUploadModal = await this.page.waitForSelector(
         "sheet-write-modal, .sheet-write-modal, modal-container.show:has(sheet-write-modal)",
         { timeout: 15000 }
@@ -284,12 +282,14 @@ export class Website1Service extends BaseWebsiteService {
       );
 
       // Fallback: Check if any new modal or form appeared
-      const anyModal = await this.page.locator(
-        'modal-container.show, .modal.show, [role="dialog"]'
-      ).count() > 0;
-      const anyForm = await this.page.locator(
-        'form, .upload-form, input[type="file"]'
-      ).count() > 0;
+      const anyModal =
+        (await this.page
+          .locator('modal-container.show, .modal.show, [role="dialog"]')
+          .count()) > 0;
+      const anyForm =
+        (await this.page
+          .locator('form, .upload-form, input[type="file"]')
+          .count()) > 0;
 
       if (anyModal || anyForm) {
         console.log("  🎯 Some modal or form detected, continuing...");
@@ -323,15 +323,12 @@ export class Website1Service extends BaseWebsiteService {
 
       // Step 2: Fill Difficulty dropdown
       console.log("  📊 Step 2: Selecting difficulty...");
-      await this.fillDropdown(
-        "level",
-        this.mapDifficulty(sheetMusic.difficulty)
-      );
+      await this.fillDropdown("level", mapDifficulty(sheetMusic.difficulty));
 
       // Step 3: Fill Instrumentation dropdown
       console.log("  🎼 Step 3: Selecting instrumentation...");
       await this.fillInstrumentationDropdown(
-        this.mapInstrumentation(sheetMusic.type)
+        mapInstrumentation(sheetMusic.type)
       );
 
       // Step 4: Fill Type dropdown (always "2 Staves")
@@ -368,7 +365,7 @@ export class Website1Service extends BaseWebsiteService {
 
       // Upload to website - TODO: Customize file upload selector
       const fileInputLocator = this.page.locator('input[type="file"]');
-      const hasFileInput = await fileInputLocator.count() > 0;
+      const hasFileInput = (await fileInputLocator.count()) > 0;
       if (hasFileInput) {
         await fileInputLocator.setInputFiles(tempPath);
         console.log(
@@ -522,14 +519,16 @@ export class Website1Service extends BaseWebsiteService {
       }
 
       console.log(`    ✅ Found option "${value}", clicking with force...`);
-      
+
       // Use force click which consistently works for instrumentation dropdown
       try {
         await optionLocator.click({ force: true });
         console.log(`    ✅ Force click succeeded: "${value}"`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        throw new Error(`Force click failed for instrumentation option: ${value}. Error: ${errorMsg}`);
+        throw new Error(
+          `Force click failed for instrumentation option: ${value}. Error: ${errorMsg}`
+        );
       }
     }
   }
@@ -540,249 +539,26 @@ export class Website1Service extends BaseWebsiteService {
   ): Promise<void> {
     if (!this.page) throw new Error("Page not available");
 
-    try {
-      console.log(`    🔍 Looking for dropdown: ${formControlName}`);
+    console.log(`    📋 Filling ${formControlName}: "${value}"`);
 
-      // Step 1: Find and click the dropdown to open it
-      let dropdownLocator = this.page.locator(
-        `mp-select[formcontrolname="${formControlName}"]`
-      );
-      let hasDropdown = await dropdownLocator.count() > 0;
+    // Find dropdown using proven selector
+    const dropdownLocator = this.page.locator(
+      `[formcontrolname="${formControlName}"] mp-select`
+    );
+    
+    // Open dropdown
+    await dropdownLocator.click();
 
-      // If not found directly, try looking inside custom components
-      if (!hasDropdown) {
-        console.log(
-          `    🔍 Trying alternative selectors for ${formControlName}...`
-        );
+    // Find and click option using proven selector and method
+    const optionLocator = this.page.locator(`mp-menu-cell:has-text("${value}")`).first();
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await optionLocator.evaluate((element: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      element.click();
+    });
 
-        // Use optimized custom selector based on test results - first selector always works
-        const customSelectors = [
-          `[formcontrolname="${formControlName}"] mp-select`,
-        ];
-
-        for (const selector of customSelectors) {
-          dropdownLocator = this.page.locator(selector);
-          hasDropdown = await dropdownLocator.count() > 0;
-          if (hasDropdown) {
-            console.log(`    ✅ Found dropdown with selector: ${selector}`);
-            break;
-          }
-        }
-      }
-
-      if (!hasDropdown) {
-        // Debug: list all mp-select elements
-        const allDropdownsCount = await this.page.locator("mp-select").count();
-        console.log(
-          `    🔍 Found ${allDropdownsCount} mp-select elements total`
-        );
-
-        throw new Error(
-          `Could not find dropdown with formcontrolname="${formControlName}"`
-        );
-      }
-
-      // Take screenshot before opening dropdown (if instrumentation)
-      if (formControlName === "instrumentation") {
-        await this.takeScreenshot(
-          `before-${formControlName}-click-${Date.now()}`,
-          []
-        );
-      }
-
-      // Step 2: Click the dropdown to open the menu
-      console.log(`    👆 Opening dropdown for ${formControlName}...`);
-      try {
-        await dropdownLocator.click();
-      } catch {
-        console.log(
-          `    ⚠️ Normal dropdown click failed, trying force click...`
-        );
-        await dropdownLocator.click({ force: true });
-      }
-
-      // Take screenshot after opening dropdown (if instrumentation)
-      if (formControlName === "instrumentation") {
-        await this.takeScreenshot(
-          `after-${formControlName}-opened-${Date.now()}`,
-          []
-        );
-      }
-
-      // Step 3: Playwright automatically waits for dropdown options to appear
-      console.log(`    ⏳ Waiting for dropdown options to appear...`);
-
-      // Step 4: Find and click the option immediately
-      console.log(`    🎯 Looking for option: "${value}"`);
-
-      // Playwright handles timing automatically
-
-      // Find the option - handle CDK overlay dropdowns
-      let selectedOption = null;
-
-      // Use optimized selector based on test results - use .first() to handle multiple matches
-      const selectors = [`mp-menu-cell:has-text("${value}")`];
-
-      for (const selector of selectors) {
-        try {
-          const optionLocator = this.page.locator(selector).first();
-          const hasOption = await this.page.locator(selector).count() > 0;
-          if (hasOption) {
-            selectedOption = optionLocator;
-            console.log(`    ✅ Found option with selector: ${selector}`);
-
-            // Try clicking different parts of the menu cell
-            console.log(`    👆 Clicking option immediately: "${value}"`);
-
-            // Since $0.click() works in DevTools, use JavaScript execution
-            console.log(
-              `    🎯 Using JavaScript click (like DevTools $0.click())...`
-            );
-
-            // Try multiple click strategies that work for all dropdowns
-            const clickMethods = [
-              {
-                name: "JavaScript click",
-                action: async (): Promise<void> => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                  await selectedOption!.evaluate((element: any) => {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                    element.click();
-                  });
-                },
-              },
-              {
-                name: "Force click",
-                action: async (): Promise<void> => {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                  await selectedOption!.click({ force: true, timeout: 1000 });
-                },
-              },
-              {
-                name: "Text element click",
-                action: async (): Promise<void> => {
-                  const textElLocator = this.page!.locator(`text="${value}"`).first();
-                  const hasTextEl = await this.page!.locator(`text="${value}"`).count() > 0;
-                  if (hasTextEl) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    await textElLocator.evaluate((el: any) => {
-                      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                      el.click();
-                    });
-                  } else {
-                    throw new Error("Text element not found");
-                  }
-                },
-              },
-            ];
-
-            for (const method of clickMethods) {
-              try {
-                console.log(`    🎯 Trying ${method.name}...`);
-                await method.action();
-                console.log(`    ✅ ${method.name} succeeded: "${value}"`);
-
-                // Take screenshot after clicking option (if instrumentation)
-                if (formControlName === "instrumentation") {
-                  await this.takeScreenshot(
-                    `after-${formControlName}-selected-${Date.now()}`,
-                    []
-                  );
-                }
-
-                // Trigger focus/blur on the dropdown to ensure Angular form validation recognizes the change
-                try {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  await dropdownLocator.evaluate((el: any) => {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                    el.focus();
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                    el.blur();
-                  });
-                  console.log(
-                    `    🔄 Triggered focus/blur to update form validation`
-                  );
-                } catch {
-                  console.log(
-                    `    ⚠️ Could not trigger focus/blur, but continuing...`
-                  );
-                }
-
-                // Take final screenshot after focus/blur (if instrumentation)
-                if (formControlName === "instrumentation") {
-                  await this.takeScreenshot(
-                    `final-${formControlName}-validation-${Date.now()}`,
-                    []
-                  );
-                }
-
-                // Return after successful click
-                return;
-              } catch (clickError) {
-                const errorMsg =
-                  clickError instanceof Error
-                    ? clickError.message
-                    : String(clickError);
-                console.log(`    ⚠️ ${method.name} failed: ${errorMsg}`);
-                continue;
-              }
-            }
-
-            // All click methods failed
-            console.log(`    ❌ All click methods failed for: "${value}"`);
-            break;
-          }
-        } catch {
-          console.log(`    ⚠️ Selector failed: ${selector}`);
-          continue;
-        }
-      }
-
-      // If we reach here, no option was found with any selector
-      throw new Error(
-        `Could not find option "${value}" for ${formControlName} using any selector`
-      );
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.warn(
-        `    ❌ Failed to fill dropdown ${formControlName}: ${errorMsg}`
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Map Notion difficulty values to website dropdown options
-   */
-  private mapDifficulty(difficulty?: string): string {
-    if (!difficulty) return "Normal";
-
-    const difficultyMap: { [key: string]: string } = {
-      Easy: "Easy",
-      Medium: "Normal",
-      Hard: "Hard",
-      Expert: "Expert",
-      Beginner: "Beginner",
-    };
-
-    return difficultyMap[difficulty] || "Normal";
-  }
-
-  /**
-   * Map Notion type values to website instrumentation options
-   */
-  private mapInstrumentation(type?: string): string {
-    if (!type) return "Solo";
-
-    const instrumentationMap: { [key: string]: string } = {
-      "Piano Solo": "Solo",
-      "Piano Ensemble": "Ensemble",
-      "Piano Duet": "Four Hands",
-      Orchestra: "Orchestra",
-      Band: "Band",
-    };
-
-    return instrumentationMap[type] || "Solo";
+    console.log(`    ✅ Selected "${value}"`);
   }
 
   /**
@@ -802,7 +578,8 @@ export class Website1Service extends BaseWebsiteService {
     console.log("    🔍 Checking if Piano is already selected...");
     const selectedPianoSelector =
       '.instruments.active mp-button.right-icon:has(span.label):has-text("Piano"):has(mp-icon[style*="close"])';
-    const isAlreadySelected = await this.page.locator(selectedPianoSelector).count() > 0;
+    const isAlreadySelected =
+      (await this.page.locator(selectedPianoSelector).count()) > 0;
 
     if (isAlreadySelected) {
       console.log(
@@ -818,7 +595,7 @@ export class Website1Service extends BaseWebsiteService {
     const pianoSelector =
       '.instruments.active mp-button:has(span.label):has-text("Piano"):not(:has-text("Piano 61keys"))';
     const pianoButtonLocator = this.page.locator(pianoSelector);
-    const hasPianoButton = await pianoButtonLocator.count() > 0;
+    const hasPianoButton = (await pianoButtonLocator.count()) > 0;
 
     if (!hasPianoButton) {
       throw new Error(
@@ -834,24 +611,27 @@ export class Website1Service extends BaseWebsiteService {
     try {
       await pianoButtonLocator.scrollIntoViewIfNeeded();
       await pianoButtonLocator.click();
-      
+
       // Wait for DOM state change and verify Piano is now selected
       await this.page.waitForTimeout(1000); // Essential: DOM needs time to update visual state
-      const nowSelected = await this.page.locator(selectedPianoSelector).count() > 0;
-      
+      const nowSelected =
+        (await this.page.locator(selectedPianoSelector).count()) > 0;
+
       if (nowSelected) {
         console.log(
           `    ✅ Standard click succeeded - Piano is now selected (verified by dark background and close icon)`
         );
       } else {
-        throw new Error("Piano button clicked but not selected (no visual state change)");
+        throw new Error(
+          "Piano button clicked but not selected (no visual state change)"
+        );
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.log(`    ❌ Standard click failed: ${errorMsg}`);
       throw new Error(`Piano selection failed: ${errorMsg}`);
     }
-  
+
     // Piano selection completed successfully
   }
 }

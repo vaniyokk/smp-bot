@@ -1,6 +1,6 @@
 import type { IWebsitePublisher } from '@/interfaces/IWebsitePublisher.js';
 import type { WebsitePublishResult, NotionSheetMusic, AIGeneratedContent } from '@/types/index.js';
-import { Website1Service } from '@/services/websites/Website1Service.js';
+import { Website1Service } from '@/services/websites/website1/Website1Service.js';
 import { Website2Service } from '@/services/websites/Website2Service.js';
 import { Website3Service } from '@/services/websites/Website3Service.js';
 import { appConfig } from '@/config/index.js';
