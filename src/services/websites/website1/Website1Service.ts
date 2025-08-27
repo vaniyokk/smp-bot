@@ -403,90 +403,27 @@ export class Website1Service extends BaseWebsiteService {
     return publishedUrl;
   }
 
-  /**
-   * Helper method to fill instrumentation dropdown using native Playwright selectOption
-   */
   private async fillInstrumentationDropdown(value: string): Promise<void> {
     if (!this.page) throw new Error("Page not available");
 
     console.log(`    🔍 Looking for instrumentation dropdown...`);
 
-    // Try to find a native HTML select element first using locator
-    const selectLocator = this.page.locator(
-      '[formcontrolname="instrumentation"] select'
-    );
-    const selectCount = await selectLocator.count();
+    // Open dropdown
+    const dropdownLocator = this.page.locator('[formcontrolname="instrumentation"] mp-select');
+    console.log(`    👆 Opening dropdown by clicking...`);
+    await dropdownLocator.click();
 
-    if (selectCount > 0) {
-      console.log(`    ✅ Found native select element for instrumentation`);
-      console.log(`    📋 Using Playwright's selectOption: "${value}"`);
+    console.log(`    🎯 Looking for option: "${value}"`);
 
-      try {
-        await selectLocator.selectOption({ label: value });
-        console.log(
-          `    ✅ Successfully selected "${value}" using selectOption`
-        );
-        return;
-      } catch {
-        console.log(`    ⚠️ selectOption failed, trying by value...`);
-        try {
-          await selectLocator.selectOption(value);
-          console.log(
-            `    ✅ Successfully selected "${value}" using selectOption by value`
-          );
-          return;
-        } catch {
-          console.log(
-            `    ⚠️ Native selectOption failed, falling back to custom approach`
-          );
-        }
-      }
-    }
-
-    // Fallback to custom dropdown approach for Angular Material
-    console.log(`    🔍 Looking for Angular Material dropdown...`);
-    const dropdownLocator = this.page.locator(
-      '[formcontrolname="instrumentation"] mp-select'
-    );
-    const dropdownCount = await dropdownLocator.count();
-    if (dropdownCount === 0) {
-      throw new Error("Could not find instrumentation dropdown");
-    }
-
-    console.log(`    ✅ Found Angular Material dropdown`);
-    console.log(`    📋 Using selectOption on the page for "${value}"`);
-
-    // Try Playwright's page-level selectOption which works with custom dropdowns
-    try {
-      await this.page.selectOption('[formcontrolname="instrumentation"]', {
-        label: value,
-      });
-      console.log(`    ✅ Page selectOption succeeded: "${value}"`);
-    } catch {
-      console.log(`    ⚠️ Page selectOption failed, trying click approach...`);
-
-      // Fallback to click approach with better reliability
-      console.log(`    👆 Opening dropdown by clicking...`);
-      await dropdownLocator.click();
-
-      console.log(`    🎯 Looking for option: "${value}"`);
-
-      // Use optimized CDK overlay selector based on test results
-      const optionLocator = this.page.locator(`.cdk-overlay-pane mp-menu-cell:has-text("${value}")`).first();
-      
-      console.log(`    ✅ Found option with CDK overlay selector: .cdk-overlay-pane mp-menu-cell:has-text("${value}")`);
-
-      console.log(`    ✅ Found option "${value}", clicking with force...`);
-      
-      // Use force click which consistently works for instrumentation dropdown
-      try {
-        await optionLocator.click({ force: true });
-        console.log(`    ✅ Force click succeeded: "${value}"`);
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        throw new Error(`Force click failed for instrumentation option: ${value}. Error: ${errorMsg}`);
-      }
-    }
+    // Wait for CDK overlay to appear and find option
+    const optionLocator = this.page.locator(`.cdk-overlay-pane mp-menu-cell:has-text("${value}")`).first();
+    
+    // Wait for the option to be available (CDK overlay takes time to load)
+    await optionLocator.waitFor({ timeout: 10000 });
+    
+    console.log(`    ✅ Found option "${value}", clicking with force...`);
+    await optionLocator.click({ force: true });
+    console.log(`    ✅ Force click succeeded: "${value}"`);
   }
 
   private async fillDropdown(
@@ -495,116 +432,22 @@ export class Website1Service extends BaseWebsiteService {
   ): Promise<void> {
     if (!this.page) throw new Error("Page not available");
 
-    try {
-      console.log(`    🔍 Looking for dropdown: ${formControlName}`);
+    console.log(`    📋 Filling ${formControlName}: "${value}"`);
 
-      // Step 1: Find and click the dropdown to open it
-      let dropdownLocator = this.page.locator(
-        `mp-select[formcontrolname="${formControlName}"]`
-      );
-      let hasDropdown = await dropdownLocator.count() > 0;
+    // Open dropdown using proven selector
+    const dropdownLocator = this.page.locator(`[formcontrolname="${formControlName}"] mp-select`);
+    await dropdownLocator.click();
 
-      // If not found directly, try looking inside custom components
-      if (!hasDropdown) {
-        console.log(
-          `    🔍 Trying alternative selector for ${formControlName}...`
-        );
+    // Find and click option using proven JavaScript click approach
+    const optionLocator = this.page.locator(`mp-menu-cell:has-text("${value}")`).first();
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await optionLocator.evaluate((element: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      element.click();
+    });
 
-        // Use optimized custom selector based on test results
-        dropdownLocator = this.page.locator(`[formcontrolname="${formControlName}"] mp-select`);
-        hasDropdown = await dropdownLocator.count() > 0;
-        if (hasDropdown) {
-          console.log(`    ✅ Found dropdown with selector: [formcontrolname="${formControlName}"] mp-select`);
-        }
-      }
-
-      if (!hasDropdown) {
-        // Debug: list all mp-select elements
-        const allDropdownsCount = await this.page.locator("mp-select").count();
-        console.log(
-          `    🔍 Found ${allDropdownsCount} mp-select elements total`
-        );
-
-        throw new Error(
-          `Could not find dropdown with formcontrolname="${formControlName}"`
-        );
-      }
-
-      // Step 2: Click the dropdown to open the menu
-      console.log(`    👆 Opening dropdown for ${formControlName}...`);
-      try {
-        await dropdownLocator.click();
-      } catch {
-        console.log(
-          `    ⚠️ Normal dropdown click failed, trying force click...`
-        );
-        await dropdownLocator.click({ force: true });
-      }
-
-      // Step 3: Playwright automatically waits for dropdown options to appear
-      console.log(`    ⏳ Waiting for dropdown options to appear...`);
-
-      // Step 4: Find and click the option immediately
-      console.log(`    🎯 Looking for option: "${value}"`);
-
-      // Find and click option using proven selector and method
-      const optionLocator = this.page.locator(`mp-menu-cell:has-text("${value}")`).first();
-      
-      console.log(`    ✅ Found option with selector: mp-menu-cell:has-text("${value}")`);
-
-      // Try clicking different parts of the menu cell
-      console.log(`    👆 Clicking option immediately: "${value}"`);
-
-      // Since $0.click() works in DevTools, use JavaScript execution
-      console.log(
-        `    🎯 Using JavaScript click (like DevTools $0.click())...`
-      );
-
-      // Use JavaScript click which consistently works for all dropdowns
-      try {
-        console.log(`    🎯 Trying JavaScript click...`);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await optionLocator.evaluate((element: any) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-          element.click();
-        });
-        console.log(`    ✅ JavaScript click succeeded: "${value}"`);
-
-        // Trigger focus/blur on the dropdown to ensure Angular form validation recognizes the change
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await dropdownLocator.evaluate((el: any) => {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-            el.focus();
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-            el.blur();
-          });
-          console.log(
-            `    🔄 Triggered focus/blur to update form validation`
-          );
-        } catch {
-          console.log(
-            `    ⚠️ Could not trigger focus/blur, but continuing...`
-          );
-        }
-
-        // Return after successful click
-        return;
-      } catch (clickError) {
-        const errorMsg =
-          clickError instanceof Error
-            ? clickError.message
-            : String(clickError);
-        console.log(`    ❌ JavaScript click failed: ${errorMsg}`);
-        throw new Error(`Click failed for option: "${value}"`);
-      }
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.warn(
-        `    ❌ Failed to fill dropdown ${formControlName}: ${errorMsg}`
-      );
-      throw error;
-    }
+    console.log(`    ✅ Selected "${value}"`);
   }
 
   /**
