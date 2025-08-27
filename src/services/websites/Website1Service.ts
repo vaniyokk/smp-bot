@@ -126,7 +126,7 @@ export class Website1Service extends BaseWebsiteService {
     await this.page.waitForTimeout(5000);
 
     // Verify login was successful (modal should be gone)
-    const modalStillVisible = await this.page.$('input[type="email"]');
+    const modalStillVisible = await this.page.locator('input[type="email"]').count() > 0;
     if (modalStillVisible) {
       throw new Error("Login may have failed - modal still visible");
     }
@@ -154,22 +154,23 @@ export class Website1Service extends BaseWebsiteService {
     await this.page.waitForTimeout(2000);
 
     // Look for the notification modal (can have any text, not just "Fill out your")
-    const notificationModal = await this.page.$("artist-notice-modal");
+    const notificationModal = await this.page.locator("artist-notice-modal").count() > 0;
     if (notificationModal) {
       console.log(
         "  ⚠️  Notification modal detected, attempting to close properly..."
       );
 
       // Find the main content area that needs to be scrolled
-      const mainContent = await this.page.$("artist-notice-modal main");
-      if (mainContent) {
+      const mainContentLocator = this.page.locator("artist-notice-modal main");
+      const hasMainContent = await mainContentLocator.count() > 0;
+      if (hasMainContent) {
         console.log(
           "  📜 Scrolling down in modal content to enable Confirm button..."
         );
 
         // Scroll to the bottom of the main content
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await mainContent.evaluate((element: any) => {
+        await mainContentLocator.evaluate((element: any) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
           element.scrollTop = element.scrollHeight;
         });
@@ -178,18 +179,19 @@ export class Website1Service extends BaseWebsiteService {
         await this.page.waitForTimeout(2000);
 
         // Now try to click the Confirm button
-        const confirmButton = await this.page.$(
+        const confirmButtonLocator = this.page.locator(
           'artist-notice-modal mp-button:has-text("Confirm")'
         );
-        if (confirmButton) {
+        const hasConfirmButton = await confirmButtonLocator.count() > 0;
+        if (hasConfirmButton) {
           console.log("  ✅ Clicking Confirm button...");
-          await confirmButton.click();
+          await confirmButtonLocator.click();
 
           // Wait for modal to close
           await this.page.waitForTimeout(2000);
 
           // Check if modal is gone
-          const modalGone = !(await this.page.$("artist-notice-modal"));
+          const modalGone = await this.page.locator("artist-notice-modal").count() === 0;
           if (modalGone) {
             console.log("  🎯 Notification modal closed successfully!");
           } else {
@@ -283,12 +285,12 @@ export class Website1Service extends BaseWebsiteService {
       );
 
       // Fallback: Check if any new modal or form appeared
-      const anyModal = await this.page.$(
+      const anyModal = await this.page.locator(
         'modal-container.show, .modal.show, [role="dialog"]'
-      );
-      const anyForm = await this.page.$(
+      ).count() > 0;
+      const anyForm = await this.page.locator(
         'form, .upload-form, input[type="file"]'
-      );
+      ).count() > 0;
 
       if (anyModal || anyForm) {
         console.log("  🎯 Some modal or form detected, continuing...");
@@ -366,9 +368,10 @@ export class Website1Service extends BaseWebsiteService {
       const tempPath = await this.downloadFile(file.url, file.name);
 
       // Upload to website - TODO: Customize file upload selector
-      const fileInput = await this.page.$('input[type="file"]');
-      if (fileInput) {
-        await fileInput.setInputFiles(tempPath);
+      const fileInputLocator = this.page.locator('input[type="file"]');
+      const hasFileInput = await fileInputLocator.count() > 0;
+      if (hasFileInput) {
+        await fileInputLocator.setInputFiles(tempPath);
         console.log(
           `✅ File uploaded to ${this.getWebsiteName()}: ${file.name}`
         );
@@ -592,12 +595,13 @@ export class Website1Service extends BaseWebsiteService {
       console.log(`    🔍 Looking for dropdown: ${formControlName}`);
 
       // Step 1: Find and click the dropdown to open it
-      let dropdown = await this.page.$(
+      let dropdownLocator = this.page.locator(
         `mp-select[formcontrolname="${formControlName}"]`
       );
+      let hasDropdown = await dropdownLocator.count() > 0;
 
       // If not found directly, try looking inside custom components
-      if (!dropdown) {
+      if (!hasDropdown) {
         console.log(
           `    🔍 Trying alternative selectors for ${formControlName}...`
         );
@@ -608,15 +612,16 @@ export class Website1Service extends BaseWebsiteService {
         ];
 
         for (const selector of customSelectors) {
-          dropdown = await this.page.$(selector);
-          if (dropdown) {
+          dropdownLocator = this.page.locator(selector);
+          hasDropdown = await dropdownLocator.count() > 0;
+          if (hasDropdown) {
             console.log(`    ✅ Found dropdown with selector: ${selector}`);
             break;
           }
         }
       }
 
-      if (!dropdown) {
+      if (!hasDropdown) {
         // Debug: list all mp-select elements
         const allDropdowns = await this.page.$$("mp-select");
         console.log(
@@ -639,12 +644,12 @@ export class Website1Service extends BaseWebsiteService {
       // Step 2: Click the dropdown to open the menu
       console.log(`    👆 Opening dropdown for ${formControlName}...`);
       try {
-        await dropdown.click();
+        await dropdownLocator.click();
       } catch {
         console.log(
           `    ⚠️ Normal dropdown click failed, trying force click...`
         );
-        await dropdown.click({ force: true });
+        await dropdownLocator.click({ force: true });
       }
 
       // Take screenshot after opening dropdown (if instrumentation)
@@ -672,8 +677,10 @@ export class Website1Service extends BaseWebsiteService {
 
       for (const selector of selectors) {
         try {
-          selectedOption = await this.page.$(selector);
-          if (selectedOption) {
+          const optionLocator = this.page.locator(selector);
+          const hasOption = await optionLocator.count() > 0;
+          if (hasOption) {
+            selectedOption = optionLocator;
             console.log(`    ✅ Found option with selector: ${selector}`);
 
             // Try clicking different parts of the menu cell
@@ -738,7 +745,7 @@ export class Website1Service extends BaseWebsiteService {
                 // Trigger focus/blur on the dropdown to ensure Angular form validation recognizes the change
                 try {
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  await dropdown.evaluate((el: any) => {
+                  await dropdownLocator.evaluate((el: any) => {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                     el.focus();
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
@@ -864,9 +871,10 @@ export class Website1Service extends BaseWebsiteService {
     );
     const pianoSelector =
       '.instruments.active mp-button:has(span.label):has-text("Piano"):not(:has-text("Piano 61keys"))';
-    const pianoButton = await this.page.$(pianoSelector);
+    const pianoButtonLocator = this.page.locator(pianoSelector);
+    const hasPianoButton = await pianoButtonLocator.count() > 0;
 
-    if (!pianoButton) {
+    if (!hasPianoButton) {
       throw new Error(
         "Could not find Piano instrument button in active instruments section"
       );
@@ -880,22 +888,22 @@ export class Website1Service extends BaseWebsiteService {
       {
         name: "Standard click",
         action: async (): Promise<void> => {
-          await pianoButton.scrollIntoViewIfNeeded();
+          await pianoButtonLocator.scrollIntoViewIfNeeded();
           await this.page!.waitForTimeout(500);
-          await pianoButton.click();
+          await pianoButtonLocator.click();
         },
       },
       {
         name: "Force click",
         action: async (): Promise<void> => {
-          await pianoButton.click({ force: true });
+          await pianoButtonLocator.click({ force: true });
         },
       },
       {
         name: "JavaScript click",
         action: async (): Promise<void> => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await pianoButton.evaluate((el: any) => {
+          await pianoButtonLocator.evaluate((el: any) => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
             el.click();
           });
@@ -911,7 +919,7 @@ export class Website1Service extends BaseWebsiteService {
 
         // Wait for state change and verify Piano is now selected
         await this.page.waitForTimeout(1000);
-        const nowSelected = await this.page.$(selectedPianoSelector);
+        const nowSelected = await this.page.locator(selectedPianoSelector).count() > 0;
 
         if (nowSelected) {
           console.log(
