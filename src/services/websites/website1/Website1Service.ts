@@ -471,64 +471,20 @@ export class Website1Service extends BaseWebsiteService {
 
       console.log(`    🎯 Looking for option: "${value}"`);
 
-      // Use optimized CDK overlay selector based on test results - first selector always works
-      const cdkOverlaySelectors = [
-        `.cdk-overlay-pane mp-menu-cell:has-text("${value}")`,
-      ];
-
-      let optionLocator = null;
-      for (const selector of cdkOverlaySelectors) {
-        try {
-          const locator = this.page.locator(selector);
-          const count = await locator.count();
-          if (count > 0) {
-            optionLocator = locator.first();
-            console.log(
-              `    ✅ Found option with CDK overlay selector: ${selector}`
-            );
-            break;
-          }
-        } catch {
-          console.log(`    ⚠️ Selector failed: ${selector}`);
-        }
-      }
-
-      if (!optionLocator) {
-        // Try one more time in case overlay is still loading
-        for (const selector of cdkOverlaySelectors) {
-          try {
-            const locator = this.page.locator(selector);
-            const count = await locator.count();
-            if (count > 0) {
-              optionLocator = locator.first();
-              console.log(
-                `    ✅ Found option after retry with selector: ${selector}`
-              );
-              break;
-            }
-          } catch {
-            continue;
-          }
-        }
-
-        if (!optionLocator) {
-          throw new Error(
-            `Could not find instrumentation option: ${value} - tried CDK overlay selectors`
-          );
-        }
-      }
+      // Use optimized CDK overlay selector based on test results
+      const optionLocator = this.page.locator(`.cdk-overlay-pane mp-menu-cell:has-text("${value}")`).first();
+      
+      console.log(`    ✅ Found option with CDK overlay selector: .cdk-overlay-pane mp-menu-cell:has-text("${value}")`);
 
       console.log(`    ✅ Found option "${value}", clicking with force...`);
-
+      
       // Use force click which consistently works for instrumentation dropdown
       try {
         await optionLocator.click({ force: true });
         console.log(`    ✅ Force click succeeded: "${value}"`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        throw new Error(
-          `Force click failed for instrumentation option: ${value}. Error: ${errorMsg}`
-        );
+        throw new Error(`Force click failed for instrumentation option: ${value}. Error: ${errorMsg}`);
       }
     }
   }
@@ -539,26 +495,116 @@ export class Website1Service extends BaseWebsiteService {
   ): Promise<void> {
     if (!this.page) throw new Error("Page not available");
 
-    console.log(`    📋 Filling ${formControlName}: "${value}"`);
+    try {
+      console.log(`    🔍 Looking for dropdown: ${formControlName}`);
 
-    // Find dropdown using proven selector
-    const dropdownLocator = this.page.locator(
-      `[formcontrolname="${formControlName}"] mp-select`
-    );
-    
-    // Open dropdown
-    await dropdownLocator.click();
+      // Step 1: Find and click the dropdown to open it
+      let dropdownLocator = this.page.locator(
+        `mp-select[formcontrolname="${formControlName}"]`
+      );
+      let hasDropdown = await dropdownLocator.count() > 0;
 
-    // Find and click option using proven selector and method
-    const optionLocator = this.page.locator(`mp-menu-cell:has-text("${value}")`).first();
-    
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await optionLocator.evaluate((element: any) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      element.click();
-    });
+      // If not found directly, try looking inside custom components
+      if (!hasDropdown) {
+        console.log(
+          `    🔍 Trying alternative selector for ${formControlName}...`
+        );
 
-    console.log(`    ✅ Selected "${value}"`);
+        // Use optimized custom selector based on test results
+        dropdownLocator = this.page.locator(`[formcontrolname="${formControlName}"] mp-select`);
+        hasDropdown = await dropdownLocator.count() > 0;
+        if (hasDropdown) {
+          console.log(`    ✅ Found dropdown with selector: [formcontrolname="${formControlName}"] mp-select`);
+        }
+      }
+
+      if (!hasDropdown) {
+        // Debug: list all mp-select elements
+        const allDropdownsCount = await this.page.locator("mp-select").count();
+        console.log(
+          `    🔍 Found ${allDropdownsCount} mp-select elements total`
+        );
+
+        throw new Error(
+          `Could not find dropdown with formcontrolname="${formControlName}"`
+        );
+      }
+
+      // Step 2: Click the dropdown to open the menu
+      console.log(`    👆 Opening dropdown for ${formControlName}...`);
+      try {
+        await dropdownLocator.click();
+      } catch {
+        console.log(
+          `    ⚠️ Normal dropdown click failed, trying force click...`
+        );
+        await dropdownLocator.click({ force: true });
+      }
+
+      // Step 3: Playwright automatically waits for dropdown options to appear
+      console.log(`    ⏳ Waiting for dropdown options to appear...`);
+
+      // Step 4: Find and click the option immediately
+      console.log(`    🎯 Looking for option: "${value}"`);
+
+      // Find and click option using proven selector and method
+      const optionLocator = this.page.locator(`mp-menu-cell:has-text("${value}")`).first();
+      
+      console.log(`    ✅ Found option with selector: mp-menu-cell:has-text("${value}")`);
+
+      // Try clicking different parts of the menu cell
+      console.log(`    👆 Clicking option immediately: "${value}"`);
+
+      // Since $0.click() works in DevTools, use JavaScript execution
+      console.log(
+        `    🎯 Using JavaScript click (like DevTools $0.click())...`
+      );
+
+      // Use JavaScript click which consistently works for all dropdowns
+      try {
+        console.log(`    🎯 Trying JavaScript click...`);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await optionLocator.evaluate((element: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          element.click();
+        });
+        console.log(`    ✅ JavaScript click succeeded: "${value}"`);
+
+        // Trigger focus/blur on the dropdown to ensure Angular form validation recognizes the change
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await dropdownLocator.evaluate((el: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+            el.focus();
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+            el.blur();
+          });
+          console.log(
+            `    🔄 Triggered focus/blur to update form validation`
+          );
+        } catch {
+          console.log(
+            `    ⚠️ Could not trigger focus/blur, but continuing...`
+          );
+        }
+
+        // Return after successful click
+        return;
+      } catch (clickError) {
+        const errorMsg =
+          clickError instanceof Error
+            ? clickError.message
+            : String(clickError);
+        console.log(`    ❌ JavaScript click failed: ${errorMsg}`);
+        throw new Error(`Click failed for option: "${value}"`);
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `    ❌ Failed to fill dropdown ${formControlName}: ${errorMsg}`
+      );
+      throw error;
+    }
   }
 
   /**
@@ -611,12 +657,12 @@ export class Website1Service extends BaseWebsiteService {
     try {
       await pianoButtonLocator.scrollIntoViewIfNeeded();
       await pianoButtonLocator.click();
-
+      
       // Wait for DOM state change and verify Piano is now selected
       await this.page.waitForTimeout(1000); // Essential: DOM needs time to update visual state
       const nowSelected =
         (await this.page.locator(selectedPianoSelector).count()) > 0;
-
+      
       if (nowSelected) {
         console.log(
           `    ✅ Standard click succeeded - Piano is now selected (verified by dark background and close icon)`
@@ -631,7 +677,7 @@ export class Website1Service extends BaseWebsiteService {
       console.log(`    ❌ Standard click failed: ${errorMsg}`);
       throw new Error(`Piano selection failed: ${errorMsg}`);
     }
-
+  
     // Piano selection completed successfully
   }
 }
