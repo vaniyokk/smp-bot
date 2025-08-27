@@ -403,33 +403,6 @@ export class Website1Service extends BaseWebsiteService {
     return publishedUrl;
   }
 
-  private async fillInstrumentationDropdown(value: string): Promise<void> {
-    if (!this.page) throw new Error("Page not available");
-
-    console.log(`    🔍 Looking for instrumentation dropdown...`);
-
-    // Open dropdown
-    const dropdownLocator = this.page.locator(
-      '[formcontrolname="instrumentation"] mp-select'
-    );
-    console.log(`    👆 Opening dropdown by clicking...`);
-    await dropdownLocator.click();
-
-    console.log(`    🎯 Looking for option: "${value}"`);
-
-    // Wait for CDK overlay to appear and find option
-    const optionLocator = this.page
-      .locator(`.cdk-overlay-pane mp-menu-cell:has-text("${value}")`)
-      .first();
-
-    // Wait for the option to be available (CDK overlay takes time to load)
-    await optionLocator.waitFor({ timeout: 10000 });
-
-    console.log(`    ✅ Found option "${value}", clicking with force...`);
-    await optionLocator.click({ force: true });
-    console.log(`    ✅ Force click succeeded: "${value}"`);
-  }
-
   private async fillDropdown(
     formControlName: string,
     value: string
@@ -460,29 +433,37 @@ export class Website1Service extends BaseWebsiteService {
 
       await dropdownLocator.click({ force: true });
 
-      // Find and click option
-      const optionLocator = this.page
-        .locator(`mp-menu-cell:has-text("${value}")`)
-        .first();
+      // Find option with CDK overlay support for instrumentation dropdown
+      const isInstrumentation = formControlName === "instrumentation";
+      const optionSelector = isInstrumentation 
+        ? `.cdk-overlay-pane mp-menu-cell:has-text("${value}")`
+        : `mp-menu-cell:has-text("${value}")`;
+      
+      const optionLocator = this.page.locator(optionSelector).first();
       await optionLocator.waitFor({ timeout: 10000 });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await optionLocator.evaluate((element: any) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-        element.click();
-      });
-
-      // Trigger focus/blur for Angular form validation
-      try {
+      // Use force click for instrumentation, JavaScript click for others
+      if (isInstrumentation) {
+        await optionLocator.click({ force: true });
+      } else {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await dropdownLocator.evaluate((el: any) => {
+        await optionLocator.evaluate((element: any) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-          el.focus();
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-          el.blur();
+          element.click();
         });
-      } catch {
-        // Continue if focus/blur fails
+
+        // Trigger focus/blur for Angular form validation (non-instrumentation dropdowns)
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await dropdownLocator.evaluate((el: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+            el.focus();
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+            el.blur();
+          });
+        } catch {
+          // Continue if focus/blur fails
+        }
       }
 
       console.log(`    ✅ Selected "${value}"`);
@@ -493,6 +474,10 @@ export class Website1Service extends BaseWebsiteService {
       );
       throw error;
     }
+  }
+
+  private async fillInstrumentationDropdown(value: string): Promise<void> {
+    await this.fillDropdown("instrumentation", value);
   }
 
   /**
