@@ -247,7 +247,6 @@ export class Website1Service extends BaseWebsiteService {
     try {
       // Scroll element into view first
       await sheetMusicOption.scrollIntoViewIfNeeded();
-      await this.page.waitForTimeout(1000);
       await sheetMusicOption.click();
       console.log("  ✅ Sheet Music option clicked successfully");
     } catch {
@@ -472,7 +471,6 @@ export class Website1Service extends BaseWebsiteService {
       // Fallback to click approach with better reliability
       console.log(`    👆 Opening dropdown by clicking...`);
       await dropdownLocator.click();
-      await this.page.waitForTimeout(500);
 
       console.log(`    🎯 Looking for option: "${value}"`);
 
@@ -499,8 +497,7 @@ export class Website1Service extends BaseWebsiteService {
       }
 
       if (!optionLocator) {
-        // Wait a bit more and try one more time in case overlay is still loading
-        await this.page.waitForTimeout(1000);
+        // Try one more time in case overlay is still loading
         for (const selector of cdkOverlaySelectors) {
           try {
             const locator = this.page.locator(selector);
@@ -606,7 +603,6 @@ export class Website1Service extends BaseWebsiteService {
 
       // Take screenshot after opening dropdown (if instrumentation)
       if (formControlName === "instrumentation") {
-        await this.page.waitForTimeout(500); // Wait for dropdown animation
         await this.takeScreenshot(
           `after-${formControlName}-opened-${Date.now()}`,
           []
@@ -688,7 +684,6 @@ export class Website1Service extends BaseWebsiteService {
 
                 // Take screenshot after clicking option (if instrumentation)
                 if (formControlName === "instrumentation") {
-                  await this.page.waitForTimeout(300);
                   await this.takeScreenshot(
                     `after-${formControlName}-selected-${Date.now()}`,
                     []
@@ -715,15 +710,13 @@ export class Website1Service extends BaseWebsiteService {
 
                 // Take final screenshot after focus/blur (if instrumentation)
                 if (formControlName === "instrumentation") {
-                  await this.page.waitForTimeout(500);
                   await this.takeScreenshot(
                     `final-${formControlName}-validation-${Date.now()}`,
                     []
                   );
                 }
 
-                // Wait for dropdown to close and return
-                await this.page.waitForTimeout(1000);
+                // Return after successful click
                 return;
               } catch (clickError) {
                 const errorMsg =
@@ -840,11 +833,10 @@ export class Website1Service extends BaseWebsiteService {
     console.log(`    🎯 Trying standard click...`);
     try {
       await pianoButtonLocator.scrollIntoViewIfNeeded();
-      await this.page.waitForTimeout(500);
       await pianoButtonLocator.click();
       
-      // Wait for state change and verify Piano is now selected
-      await this.page.waitForTimeout(1000);
+      // Wait for DOM state change and verify Piano is now selected
+      await this.page.waitForTimeout(1000); // Essential: DOM needs time to update visual state
       const nowSelected = await this.page.locator(selectedPianoSelector).count() > 0;
       
       if (nowSelected) {
