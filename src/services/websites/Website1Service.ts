@@ -672,13 +672,13 @@ export class Website1Service extends BaseWebsiteService {
       // Find the option - handle CDK overlay dropdowns
       let selectedOption = null;
 
-      // Use optimized selector based on test results - first selector always works
+      // Use optimized selector based on test results - use .first() to handle multiple matches
       const selectors = [`mp-menu-cell:has-text("${value}")`];
 
       for (const selector of selectors) {
         try {
-          const optionLocator = this.page.locator(selector);
-          const hasOption = await optionLocator.count() > 0;
+          const optionLocator = this.page.locator(selector).first();
+          const hasOption = await this.page.locator(selector).count() > 0;
           if (hasOption) {
             selectedOption = optionLocator;
             console.log(`    ✅ Found option with selector: ${selector}`);
