@@ -524,63 +524,15 @@ export class Website1Service extends BaseWebsiteService {
         }
       }
 
-      console.log(
-        `    ✅ Found option "${value}", trying multiple click approaches...`
-      );
-
-      // Try multiple approaches since regular click might fail due to visibility detection
-      const clickMethods = [
-        {
-          name: "Force click (bypass visibility checks)",
-          action: async (): Promise<void> =>
-            await optionLocator.click({ force: true }),
-        },
-        {
-          name: "Coordinate-based click",
-          action: async (): Promise<void> => {
-            const box = await optionLocator.boundingBox();
-            if (box) {
-              await this.page!.mouse.click(
-                box.x + box.width / 2,
-                box.y + box.height / 2
-              );
-            } else {
-              throw new Error("No bounding box");
-            }
-          },
-        },
-        {
-          name: "JavaScript evaluate click",
-          action: async (): Promise<void> => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await optionLocator.evaluate((el: any) => {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-              el.click();
-            });
-          },
-        },
-      ];
-
-      let success = false;
-      for (const method of clickMethods) {
-        try {
-          console.log(`    🎯 Trying ${method.name}...`);
-          await method.action();
-          success = true;
-          console.log(`    ✅ ${method.name} succeeded: "${value}"`);
-          break;
-        } catch (error) {
-          const errorMsg =
-            error instanceof Error ? error.message : String(error);
-          console.log(`    ⚠️ ${method.name} failed: ${errorMsg}`);
-          continue;
-        }
-      }
-
-      if (!success) {
-        throw new Error(
-          `All click methods failed for instrumentation option: ${value}`
-        );
+      console.log(`    ✅ Found option "${value}", clicking with force...`);
+      
+      // Use force click which consistently works for instrumentation dropdown
+      try {
+        await optionLocator.click({ force: true });
+        console.log(`    ✅ Force click succeeded: "${value}"`);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        throw new Error(`Force click failed for instrumentation option: ${value}. Error: ${errorMsg}`);
       }
     }
   }
@@ -715,10 +667,9 @@ export class Website1Service extends BaseWebsiteService {
                 action: async (): Promise<void> => {
                   const textElLocator = this.page!.locator(`text="${value}"`).first();
                   const hasTextEl = await this.page!.locator(`text="${value}"`).count() > 0;
-                  const textEl = hasTextEl ? textElLocator : null;
-                  if (textEl) {
+                  if (hasTextEl) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    await textEl.evaluate((el: any) => {
+                    await textElLocator.evaluate((el: any) => {
                       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                       el.click();
                     });
@@ -885,66 +836,30 @@ export class Website1Service extends BaseWebsiteService {
     console.log("    ✅ Found unselected Piano button");
     console.log("    👆 Clicking Piano button to select it...");
 
-    // Try different click approaches
-    const clickMethods = [
-      {
-        name: "Standard click",
-        action: async (): Promise<void> => {
-          await pianoButtonLocator.scrollIntoViewIfNeeded();
-          await this.page!.waitForTimeout(500);
-          await pianoButtonLocator.click();
-        },
-      },
-      {
-        name: "Force click",
-        action: async (): Promise<void> => {
-          await pianoButtonLocator.click({ force: true });
-        },
-      },
-      {
-        name: "JavaScript click",
-        action: async (): Promise<void> => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await pianoButtonLocator.evaluate((el: any) => {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-            el.click();
-          });
-        },
-      },
-    ];
-
-    let clickSucceeded = false;
-    for (const method of clickMethods) {
-      try {
-        console.log(`    🎯 Trying ${method.name}...`);
-        await method.action();
-
-        // Wait for state change and verify Piano is now selected
-        await this.page.waitForTimeout(1000);
-        const nowSelected = await this.page.locator(selectedPianoSelector).count() > 0;
-
-        if (nowSelected) {
-          console.log(
-            `    ✅ ${method.name} succeeded - Piano is now selected (verified by dark background and close icon)`
-          );
-          clickSucceeded = true;
-          break;
-        } else {
-          console.log(
-            `    ⚠️ ${method.name} clicked but Piano not selected (no visual state change)`
-          );
-        }
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        console.log(`    ❌ ${method.name} failed: ${errorMsg}`);
-        continue;
+    // Use standard click which consistently works for piano selection
+    console.log(`    🎯 Trying standard click...`);
+    try {
+      await pianoButtonLocator.scrollIntoViewIfNeeded();
+      await this.page.waitForTimeout(500);
+      await pianoButtonLocator.click();
+      
+      // Wait for state change and verify Piano is now selected
+      await this.page.waitForTimeout(1000);
+      const nowSelected = await this.page.locator(selectedPianoSelector).count() > 0;
+      
+      if (nowSelected) {
+        console.log(
+          `    ✅ Standard click succeeded - Piano is now selected (verified by dark background and close icon)`
+        );
+      } else {
+        throw new Error("Piano button clicked but not selected (no visual state change)");
       }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.log(`    ❌ Standard click failed: ${errorMsg}`);
+      throw new Error(`Piano selection failed: ${errorMsg}`);
     }
-
-    if (!clickSucceeded) {
-      throw new Error(
-        "Failed to select Piano instrument - all click methods failed or didn't change state"
-      );
-    }
+  
+    // Piano selection completed successfully
   }
 }
